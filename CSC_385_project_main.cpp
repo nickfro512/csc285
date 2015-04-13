@@ -1,42 +1,49 @@
 /*
-
 CSC 385 project - Library Management System
 
-User add and list currently work for the most part. 
-Bug: When adding a user, using spaces in the input will make it skip a field. 
 
-Still to do:
+User add and list currently work for the most part. Set up media classes but haven't tested yet.
+
+Known bugs: 
+When adding a user, using spaces in the input will make it skip a field. 
+Current way media/user IDing is set up, deleting record will break the ID system. Will fix soon.
+
+
+STUFF THAT STILL NEEDS TO BE DONE:
 
 USER:
+delete
 login
 logout
 checkin
 checkout
 get checked out list
+update
 
-VALIDATION: *** We will also want at least basic validation for new user info (i.e. valid emails, passwords etc)
+VALIDATION: We will also want at least basic validation for new user info (i.e. valid emails, passwords etc)
 
 MEDIA:
-Constructor
+Create		
+Update	
+Checkin
+Checkout
+Delete	
+Search
 
-Create		(isbn, title, author, subject, category, copies available)
-Create new media item
-Returns new media item ID
+MENUS:
 
-Update		(isbn, title, author, subject, category, due date, copies available, user id, renewal status)
-Update media item record
+Log in menu
 
-Delete		(user_ID)
-Delete existing media item	
-
-Search		(query)
-Search media item database
-Returns results
-
-Attributes
-Database Connection to Media Database (Database Handler object) - currently this can just be a MediaList object until we implement database
+User Interface
+	Edit user
+Media interface
+	New media
+	Edit media
 
 
+
+DATABASE: 	Need to get a proper database setup or at least something that will read a CSV file or something
+			so changes/additions are saved on program exit
 
 */
 
@@ -224,6 +231,148 @@ class UserHandler
 };
 
 
+// !!!!!!! MEDIA CLASSES ARE UNTESTED
+
+// Media item in the Library Management System
+class Media
+{
+	// all media variables are public so they can be retrieved and updated by the MediaHandler class
+	public:
+		int mediaID;				// unique user ID for media record
+		char media_type;			// media type: 'b' = book, 'd' = dvd, 'm' = music
+		string isbn;				// ISBN number (string so it can take dashes)
+		string title;				// media title
+		string author;				// media author/artist name
+		string subject;				// media subject (history, scifi, etc.)
+		vector<date> due_dates;		// due dates for copies that have been checked out
+		vector<int> checked_out_IDs;	// user IDs of users who have checked out a copy
+
+	// constructor
+	Media::Media()
+	{
+		// initialize everything blank while we're debugging
+		mediaID = -1;
+		media_type = 'x';
+		isbn = "";
+		title = "";
+		author = "";
+		subject = "";
+
+	}
+
+	void Media::clear()		// empty out a media record
+	{
+		// initialize everything blank while we're debugging
+		mediaID = -1;	// this will get assigned by MediaHandler::add
+		media_type = 'x';
+		isbn = "";
+		title = "";
+		author = "";
+		subject = "";
+		
+	}
+
+	// print the media's record to the console
+	void Media::displayInformation()
+	{
+	}
+
+};
+
+// a list of Media objects	-	stand in for an actual database for the time being
+class MediaList
+{
+	public:
+		vector<Media> list;
+
+	MediaList::MediaList()
+	{
+	}
+	
+	// get media by ID
+	Media MediaList::getMedia(int id)
+	{
+		return list[id];
+	}
+
+	// Add media
+	int MediaList::add(Media theMedia)
+	{
+		theMedia.mediaID = list.size(); // media ID is the index media was added at in the list
+		list.push_back(theMedia);
+		return theMedia.mediaID;
+	}
+
+	// !!!! This doesn't work yet
+	bool MediaList::remove(int id)
+	{
+		list.erase(list.begin() + id);
+		/*Media theMedia;
+		theMedia = getMedia(id);
+		theMedia.mediaType = 'x';
+		return true;*/ 
+	}
+
+	int MediaList::getSize()
+	{
+		return list.size();
+	}
+
+};
+
+// facilitates operations on the Media objects in MediaList objects
+class MediaHandler
+{
+	public:
+		MediaList theList;
+
+	// MediaHandler constructor
+	MediaHandler::MediaHandler()
+	{
+	}
+
+	// get a media from the media list by their ID number
+	Media MediaHandler::getMedia(int id)
+	{
+		Media theMedia = theList.getMedia(id);
+		return theMedia;
+	}
+
+	// add a new media to the media list
+	int MediaHandler::addMedia(Media theMedia)
+	{
+		int newMediaID;
+		newMediaID = theList.add(theMedia);
+		return newMediaID;
+	}
+
+	bool MediaHandler::deleteMedia(int id)
+	{
+		//theList.remove(id);
+		return true;
+	}
+
+	void MediaHandler::listAllMedia()
+	{
+		Media theMedia;
+		for (int i = 0; i < theList.getSize(); i++)
+		{
+			theMedia = getMedia(i);
+			theMedia.displayInformation();
+		}
+	}
+
+	bool MediaHandler::checkIn()
+	{
+	}
+
+	bool MediaHandler::checkOut()
+	{
+	}
+
+};
+
+
 
 // print the menu and get a command from user
 char menu_select_get(int menu_type)
@@ -359,4 +508,3 @@ int main()
 
 	return 0;
 }
-
