@@ -2,12 +2,10 @@
 CSC 385 project - Library Management System
 
 
-User add and list currently work for the most part. Set up media classes but haven't tested yet.
+User and media add and list currently work
 
 Known bugs: 
-When adding a user, using spaces in the input will make it skip a field. 
-Current way media/user IDing is set up, deleting record will break the ID system. Will fix soon.
-
+Current way media/user IDing is set up, deleting records will break the ID system
 
 STUFF THAT STILL NEEDS TO BE DONE:
 
@@ -19,29 +17,40 @@ checkin
 checkout
 get checked out list
 update
-
-VALIDATION: We will also want at least basic validation for new user info (i.e. valid emails, passwords etc)
+search
 
 MEDIA:
-Create		
+		
 Update	
 Checkin
 Checkout
 Delete	
 Search
 
+
 MENUS:
 
-Log in menu
-
-User Interface
-	Edit user
-Media interface
-	New media
-	Edit media
+*** Would be nice to have all menus be objects, currently functions.
+	
+INPUT VALIDATION: We will want at least basic validation for new user/media info (i.e. valid emails, passwords etc)
 
 
+Login interface - prompt for username, password
 
+Admin interface
+	User menu
+		Edit user
+		Search users by field X
+	Media menu
+		Edit media
+		Search media by field X
+
+
+User interface
+	Search menu
+	Checkin/checkout menu
+
+	
 DATABASE: 	Need to get a proper database setup or at least something that will read a CSV file or something
 			so changes/additions are saved on program exit
 
@@ -51,6 +60,7 @@ DATABASE: 	Need to get a proper database setup or at least something that will r
 #include <iostream>
 #include <vector>
 #include <string>
+#include <ctime>
 
 using namespace std;
 
@@ -131,17 +141,19 @@ class User
 	{
 	}
 
+	// password encryption would be nice to have:
+
 	// encrypt user password
 	string User::encryptPassword(string password)
 	{
-		string encryptedPassword = "sfdfsdd";
+		string encryptedPassword = password;
 		return encryptedPassword;
 	}
 
 	// decrypt user password
 	string User::decryptPassword(string encryptedPassword)
 	{
-		string decryptedPassword = "password";
+		string decryptedPassword = encryptedPassword;
 		return decryptedPassword;
 	}
 };
@@ -231,20 +243,19 @@ class UserHandler
 };
 
 
-// !!!!!!! MEDIA CLASSES ARE UNTESTED
-
 // Media item in the Library Management System
 class Media
 {
 	// all media variables are public so they can be retrieved and updated by the MediaHandler class
 	public:
 		int mediaID;				// unique user ID for media record
-		char media_type;			// media type: 'b' = book, 'd' = dvd, 'm' = music
+		char mediaType;			// media type: 'b' = book, 'd' = dvd, 'm' = music
 		string isbn;				// ISBN number (string so it can take dashes)
 		string title;				// media title
 		string author;				// media author/artist name
 		string subject;				// media subject (history, scifi, etc.)
-		vector<date> due_dates;		// due dates for copies that have been checked out
+		int copies;					// number of copies available
+		vector<time_t> due_dates;		// due dates for copies that have been checked out
 		vector<int> checked_out_IDs;	// user IDs of users who have checked out a copy
 
 	// constructor
@@ -252,11 +263,12 @@ class Media
 	{
 		// initialize everything blank while we're debugging
 		mediaID = -1;
-		media_type = 'x';
+		mediaType = 'x';
 		isbn = "";
 		title = "";
 		author = "";
 		subject = "";
+		copies = 0;
 
 	}
 
@@ -264,17 +276,39 @@ class Media
 	{
 		// initialize everything blank while we're debugging
 		mediaID = -1;	// this will get assigned by MediaHandler::add
-		media_type = 'x';
+		mediaType = 'x';
 		isbn = "";
 		title = "";
 		author = "";
 		subject = "";
-		
+		copies = 0;
 	}
 
 	// print the media's record to the console
 	void Media::displayInformation()
 	{
+		cout << "ID: " << mediaID << endl;
+		cout << "Type: ";
+		if (mediaType == 'b')
+		{
+			cout << "Book" << endl;
+		}
+		else if (mediaType == 'd')
+		{
+			cout << "DVD" << endl;
+		}
+		else
+		{
+			cout << "Music" << endl;
+		}
+
+		cout << "ISBN: " << isbn << endl;
+		cout << "Title: " << title << endl;
+		cout << "Author: " << author << endl;
+		cout << "Subject: " << subject << endl;
+		cout << "Copies: " << copies << endl;
+		
+		cout << "------------------" << endl;
 	}
 
 };
@@ -398,6 +432,8 @@ char menu_select_get(int menu_type)
 	cout << "(t) Toggle Media/User menu" << endl;
 	cout << "(x) exit" << endl;
 	cin >> command;
+	cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+	cout << endl;
 	return command;
 }
 
@@ -409,26 +445,57 @@ User menu_user_add(UserHandler theHandler)
 
 	cout << "User type (a for admin, p for patron): ";
 	cin >> newUser.userType;
+	cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
 
 	cout <<  "Username: ";
-	cin >> newUser.username;
+	getline(cin, newUser.username);
 
 	cout <<  "Password: ";
-	cin >> newUser.password;
+	getline(cin, newUser.password);
 
 	cout <<  "Full Name: ";
-	cin >> newUser.fullName;
+	getline(cin, newUser.fullName);
 
 	cout <<  "Email: ";
-	cin >> newUser.email;
+	getline(cin, newUser.email);
 
 	cout <<  "Address: ";
-	cin >> newUser.address;
+	getline(cin, newUser.address);
 
 	cout <<  "Phone: ";
-	cin >> newUser.phone;
+	getline(cin, newUser.phone);
 	
 	return newUser;
+}
+
+// allow admin to input a new media record field by field
+// NOTE: will want to validate these inputs eventually
+Media menu_media_add(MediaHandler theHandler)
+{
+	Media newMedia;
+
+	cout << "Media type (b for book, d for DVD, m for music): ";
+	cin >> newMedia.mediaType;
+	cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+	
+	cout << "ISBN number: ";
+	getline(cin, newMedia.isbn);
+
+	cout << "Title: ";
+	getline(cin, newMedia.title);
+
+	cout << "Author: ";
+	getline(cin, newMedia.author);
+
+	cout << "Subject: ";
+	getline(cin, newMedia.subject);
+
+	cout << "Copies: ";
+	cin >> newMedia.copies;
+
+
+	
+	return newMedia;
 }
 
 int main()
@@ -437,7 +504,10 @@ int main()
 	char menu_command = 'z';
 	
 	User theUser;
-	UserHandler theHandler;
+	UserHandler theUserHandler;
+
+	Media theMedia;
+	MediaHandler theMediaHandler;
 
 	User user2;				// initialize with a user for testing
 	user2.userType = 'a';	
@@ -449,9 +519,9 @@ int main()
 	user2.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";				
 	user2.phone = "860 214 9523";
 	
-	theHandler.addUser(user2);			// add first user
+	theUserHandler.addUser(user2);			// add first user
 	
-	//theUser = theHandler.getUser(0);	// get the new user record
+	//theUser = theUserHandler.getUser(0);	// get the new user record
 	// theUser.displayInformation();		// print record
 
 	while (menu_command != 'x')
@@ -474,6 +544,16 @@ int main()
 		{
 			switch(menu_command)
 			{
+				case 'a':
+					int newMediaID;
+					theMedia = menu_media_add(theMediaHandler);
+					newMediaID = theMediaHandler.addMedia(theMedia);
+					cout << "Successfully added Media ID " << newMediaID << endl;
+					break;
+				case 'l':
+					cout << "---------------------------------- MEDIA LIST" << endl;
+					theMediaHandler.listAllMedia();
+					break;
 				
 			}
 		}
@@ -484,20 +564,20 @@ int main()
 			{
 				case 'a':
 					int newUserID;
-					theUser = menu_user_add(theHandler);
-					newUserID = theHandler.addUser(theUser);
+					theUser = menu_user_add(theUserHandler);
+					newUserID = theUserHandler.addUser(theUser);
 					cout << "Successfully added user ID " << newUserID << endl;
 					break;
 				case 'd':			// !!!! This doesn't work yet
 					int deleteID;
 					cout << endl << "User ID to delete: ";
 					cin >> deleteID;
-					theHandler.deleteUser(deleteID);
+					theUserHandler.deleteUser(deleteID);
 					cout << endl << "Successfully deleted user ID " << deleteID;
 					break;
 				case 'l':
 					cout << "---------------------------------- USER LIST" << endl;
-					theHandler.listAllUsers();
+					theUserHandler.listAllUsers();
 					break;	
 
 			}
