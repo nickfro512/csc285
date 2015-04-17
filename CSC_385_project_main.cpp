@@ -162,6 +162,7 @@ class User
 class UserList
 {
 	public:
+		int userCounter = 0;	// number of users added so far, used to determined new user IDs
 		vector<User> list;
 
 	UserList::UserList()
@@ -171,13 +172,38 @@ class UserList
 	// get user by ID
 	User UserList::getUser(int id)
 	{
-		return list[id];
+		User theUser;
+		for (i = list.begin(); i < list.size(); i++)
+		{
+			theUser = list[i];
+			if (theUser.userID == id)
+			{
+				return theUser;
+			}
+		}
+		return null;		// no user found with matching ID
+	}
+
+	// get index of user in current list by user ID
+	User UserList::getUserIndex(int id)
+	{
+		User theUser;
+		for (i = list.begin(); i < list.size(); i++)
+		{
+			theUser = list[i];
+			if (theUser.userID == id)
+			{
+				return i;
+			}
+		}
+		return null;		// no user found with matching ID
 	}
 
 	// Add user
 	int UserList::add(User theUser)
 	{
-		theUser.userID = list.size(); // user ID is the index user was added at in the list
+		theUser.userID = userCounter;
+		userCounter++;
 		list.push_back(theUser);
 		return theUser.userID;
 	}
@@ -185,6 +211,7 @@ class UserList
 	// !!!! This doesn't work yet
 	bool UserList::remove(int id)
 	{
+		targetIndex = getUserIndex(id);
 		list.erase(list.begin() + id);
 		/*User theUser;
 		theUser = getUser(id);
@@ -220,9 +247,9 @@ class UserHandler
 	// add a new user to the user list
 	int UserHandler::addUser(User theUser)
 	{
-		int newUserID;
-		newUserID = theList.add(theUser);
-		return newUserID;
+		int editedUserID;
+		editedUserID = theList.add(theUser);
+		return editedUserID;
 	}
 
 	bool UserHandler::deleteUser(int id)
@@ -406,7 +433,10 @@ class MediaHandler
 
 };
 
+class InterfaceHandler
+{
 
+};
 
 // print the menu and get a command from user
 char menu_select_get(int menu_type)
@@ -441,31 +471,111 @@ char menu_select_get(int menu_type)
 // NOTE: will want to validate these inputs eventually
 User menu_user_add(UserHandler theHandler)
 {
-	User newUser;
+	User editedUser;
 
 	cout << "User type (a for admin, p for patron): ";
-	cin >> newUser.userType;
+	cin >> editedUser.userType;
 	cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
 
 	cout <<  "Username: ";
-	getline(cin, newUser.username);
+	getline(cin, editedUser.username);
 
 	cout <<  "Password: ";
-	getline(cin, newUser.password);
+	getline(cin, editedUser.password);
 
 	cout <<  "Full Name: ";
-	getline(cin, newUser.fullName);
+	getline(cin, editedUser.fullName);
 
 	cout <<  "Email: ";
-	getline(cin, newUser.email);
+	getline(cin, editedUser.email);
 
 	cout <<  "Address: ";
-	getline(cin, newUser.address);
+	getline(cin, editedUser.address);
 
 	cout <<  "Phone: ";
-	getline(cin, newUser.phone);
+	getline(cin, editedUser.phone);
 	
-	return newUser;
+	return editedUser;
+}
+
+// Menu to allow admin to edit user records
+User menu_user_edit(User theUser, UserHandler theHandler)
+{
+	char edit_command;
+	User editedUser = theUser;
+
+	while (edit_command != 'x')
+	{
+		editedUser.displayInformation();
+		
+		cout << "Select field to edit" << endl << endl;
+	
+		cout << "(1) User Type " << endl;
+		cout << "(2) Username: " << endl;
+		cout << "(3) Password: " << endl;
+		cout << "(4) First Name: " << endl;
+		cout << "(5) Last Name: " << endl;
+		cout << "(6) Email: " << endl;
+		cout << "(7) Address: " << endl;
+		cout << "(8) Phone: " << endl;
+		cout << "(a) Edit all" << endl;
+		cout << "(x) Finish editing" << endl;
+
+		cin >> edit_command;
+		cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+		
+		switch(edit_command)
+		{
+			case 'a':
+				editedUser = menu_user_add;
+				break;
+			
+			case '1':
+				cin >> editedUser.userType;
+				cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+				break;
+
+			case '2':
+				cout <<  "Username: ";
+				getline(cin, editedUser.username);
+				break;
+
+			case '3':
+				cout <<  "Password: ";
+				getline(cin, editedUser.password);
+				break;
+
+			case '4':
+			case '5':
+				cout <<  "Full Name: ";
+				getline(cin, editedUser.fullName);
+				break;
+
+			case '6':
+				cout <<  "Email: ";
+				getline(cin, editedUser.email);
+				break;
+
+			case '7':
+				cout <<  "Address: ";
+				getline(cin, editedUser.address);
+				break;
+
+			case '8':
+				cout <<  "Phone: ";
+				getline(cin, editedUser.phone);
+				break;
+
+			default:
+				break;
+		}
+	}
+
+
+
+
+	
+
 }
 
 // allow admin to input a new media record field by field
@@ -497,6 +607,66 @@ Media menu_media_add(MediaHandler theHandler)
 	
 	return newMedia;
 }
+
+User menu_media_edit(Media theMedia, MediaHandler theHandler)
+{
+	char edit_command;
+	User editedMedia = theMedia;
+
+	while (edit_command != 'x')
+	{
+		editedMedia.displayInformation();
+		
+		cout << "Select field to edit" << endl << endl;
+	
+		cout << "(1) Media Type " << endl;
+		cout << "(2) ISBN number: " << endl;
+		cout << "(3) Title: " << endl;
+		cout << "(4) Author: " << endl;
+		cout << "(5) Subject: " << endl;
+		cout << "(6) Copies: " << endl;
+		cout << "(a) Edit all" << endl;
+		cout << "(x) Finish editing" << endl;
+
+		cin >> edit_command;
+		cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+		
+		switch(edit_command)
+		{
+			case 'a':
+				editedMedia = menu_media_add;
+				break;
+			
+			case '1':
+				cin >> editedMedia.userType;
+				cin.ignore(1,'\n');		// stop last cin from messing up future getline input by inserting a new line here
+				break;
+
+			case '2':
+				cout << "Title: ";
+				getline(cin, editedMedia.title);
+				break;
+
+			case '3':
+				cout << "Author: ";
+				getline(cin, editedMedia.author);
+				break;
+
+			case '4':
+				cout << "Subject: ";
+				getline(cin, editedMedia.subject);
+				break;
+
+			case '5':
+				cout << "Copies: ";
+				cin >> editedMedia.copies;
+				break;
+
+			default:
+				break;
+		}
+	}
+
 
 int main()
 {
@@ -563,10 +733,10 @@ int main()
 			switch(menu_command)
 			{
 				case 'a':
-					int newUserID;
+					int editedUserID;
 					theUser = menu_user_add(theUserHandler);
-					newUserID = theUserHandler.addUser(theUser);
-					cout << "Successfully added user ID " << newUserID << endl;
+					editedUserID = theUserHandler.addUser(theUser);
+					cout << "Successfully added user ID " << editedUserID << endl;
 					break;
 				case 'd':			// !!!! This doesn't work yet
 					int deleteID;
