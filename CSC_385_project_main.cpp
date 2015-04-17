@@ -220,9 +220,33 @@ public:
 		return true;
 	}
 
-	int UserList::getSize()
+	bool User::edit(int id, User editedUser)
 	{
-		return list.size();
+		targetIndex = getUserIndex(id);
+		list[userIndex] = editedUser;
+		return true;
+	}
+
+	
+
+	void UserList::listAll()
+	{
+		User theUser;
+		for (int i = 0; i < list.size(); i++)
+		{
+			theUser = list[i];
+			theUser.displayInformation();
+		}
+	}
+
+	vector<int> UserList::getAllUserIDs()
+	{
+		vector<int> userIDs;
+		for (int i = 0; i < list.size(); i++)
+		{
+			theUser = list[i];
+			userIDs.push_back(theUser.userID);
+		}
 	}
 
 };
@@ -231,7 +255,7 @@ public:
 class UserHandler
 {
 public:
-	UserList theList;
+	UserList theUserList;
 
 	// UserHandler constructor
 	UserHandler::UserHandler()
@@ -241,7 +265,7 @@ public:
 	// get a user from the user list by their ID number
 	User UserHandler::getUser(int id)
 	{
-		User theUser = theList.getUser(id);
+		User theUser = theUserList.getUser(id);
 		return theUser;
 	}
 
@@ -249,24 +273,31 @@ public:
 	int UserHandler::addUser(User theUser)
 	{
 		int editedUserID;
-		editedUserID = theList.add(theUser);
+		editedUserID = theUserList.add(theUser);
 		return editedUserID;
 	}
 
 	bool UserHandler::deleteUser(int id)
 	{
-		theList.remove(id);
+		theUserList.remove(id);
+		return true;
+	}
+
+	bool UserHandler::editUser(int id, editedUser)
+	{
+		theUserList.edit(id, editedUser);
 		return true;
 	}
 
 	void UserHandler::listAllUsers()
 	{
-		User theUser;
-		for (int i = 0; i < theList.getSize(); i++)
+		theUserList.listAll();
+		/*User theUser;
+		for (int i = 0; i < theUserList.getSize(); i++)
 		{
 			theUser = getUser(i);
 			theUser.displayInformation();
-		}
+		}*/
 	}
 };
 
@@ -678,53 +709,53 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 }
 
 
-	int main()
+int main()
+{
+	int menu_select = 1;
+	char menu_command = 'z';
+
+	User theUser;
+	UserHandler theUserHandler;
+
+	Media theMedia;
+	MediaHandler theMediaHandler;
+
+	User user2;				// initialize with a user for testing
+	user2.userType = 'a';
+	user2.sessionID = 55324;
+	user2.username = "nfrogley";
+	user2.password = "password";
+	user2.firstlName = "Nick";
+	user2.lastName = "Frogley";
+	user2.email = "nickfro@gmail.com";
+	user2.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
+	user2.phone = "860 214 9523";
+
+	theUserHandler.addUser(user2);			// add first user
+
+	//theUser = theUserHandler.getUser(0);	// get the new user record
+	// theUser.displayInformation();		// print record
+
+	while (menu_command != 'x')
 	{
-		int menu_select = 1;
-		char menu_command = 'z';
+		menu_command = menu_select_get(menu_select);
 
-		User theUser;
-		UserHandler theUserHandler;
-
-		Media theMedia;
-		MediaHandler theMediaHandler;
-
-		User user2;				// initialize with a user for testing
-		user2.userType = 'a';
-		user2.sessionID = 55324;
-		user2.username = "nfrogley";
-		user2.password = "password";
-		user2.firstlName = "Nick";
-		user2.lastName = "Frogley";
-		user2.email = "nickfro@gmail.com";
-		user2.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
-		user2.phone = "860 214 9523";
-
-		theUserHandler.addUser(user2);			// add first user
-
-		//theUser = theUserHandler.getUser(0);	// get the new user record
-		// theUser.displayInformation();		// print record
-
-		while (menu_command != 'x')
+		if (menu_command == 't')		// toggle media/user menu
 		{
-			menu_command = menu_select_get(menu_select);
-
-			if (menu_command == 't')		// toggle media/user menu
+			if (menu_select == 0)
 			{
-				if (menu_select == 0)
-				{
-					menu_select = 1;
-				}
-				else
-				{
-					menu_select = 0;
-				}
+				menu_select = 1;
 			}
-
-			if (menu_select == 0)	// media menu
+			else
 			{
-				switch (menu_command)
-				{
+				menu_select = 0;
+			}
+		}
+
+		if (menu_select == 0)	// media menu
+		{
+			switch (menu_command)
+			{
 				case 'a':
 					int newMediaID;
 					theMedia = menu_media_add(theMediaHandler);
@@ -736,13 +767,13 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 					theMediaHandler.listAllMedia();
 					break;
 
-				}
 			}
+		}
 
-			else	// user menu
+		else	// user menu
+		{
+			switch (menu_command)
 			{
-				switch (menu_command)
-				{
 				case 'a':
 					int editedUserID;
 					theUser = menu_user_add(theUserHandler);
@@ -761,11 +792,10 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 					theUserHandler.listAllUsers();
 					break;
 
-				}
 			}
-
 		}
 
-
-		return 0;
 	}
+
+	return 0;
+}
