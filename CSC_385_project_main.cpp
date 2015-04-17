@@ -74,7 +74,8 @@ public:
 	char userType;					// user type - 'a' is admin, 'p' is patron, 'x' is inactive
 	string username;				// username for their login
 	string password;				// password for their login
-	string fullName;				// user's full name
+	string firstName;				// user's full name
+	string lastName;				// user's last name
 	string email;					// user's email
 	string address;					// user's address
 	string phone;					// user's phone number
@@ -89,7 +90,8 @@ public:
 		sessionID = 0;
 		username = "";
 		password = "";
-		fullName = "";
+		firstName = "";
+		lastName = "";
 		email = "";
 		address = "";
 		phone = "";
@@ -103,7 +105,8 @@ public:
 		sessionID = 0;
 		username = "";
 		password = "";
-		fullName = "";
+		firstName = "";
+		lastName = "";
 		email = "";
 		address = "";
 		phone = "";
@@ -125,7 +128,7 @@ public:
 
 		cout << "Username: " << username << endl;
 		cout << "Password: " << decryptPassword(password) << endl;
-		cout << "Name: " << fullName << endl;
+		cout << "Name: " << firstName << " " << lastName << endl;
 		cout << "Email: " << email << endl;
 		cout << "Address: " << address << endl;
 		cout << "Phone number: " << phone << endl;
@@ -197,7 +200,7 @@ public:
 				return i;
 			}
 		}
-		return i;		// no user found with matching ID
+		return -1;		// no user found with matching ID
 	}
 
 	// Add user
@@ -215,10 +218,6 @@ public:
 		int targetIndex = getUserIndex(id);
 		list.erase(list.begin() + targetIndex);
 		return true;
-		/*User theUser;
-		theUser = getUser(id);
-		theUser.userType = 'x';
-		return true;*/
 	}
 
 	int UserList::getSize()
@@ -485,8 +484,11 @@ User menu_user_add(UserHandler theHandler)
 	cout << "Password: ";
 	getline(cin, editedUser.password);
 
-	cout << "Full Name: ";
-	getline(cin, editedUser.fullName);
+	cout << "First Name: ";
+	getline(cin, editedUser.firstName);
+
+	cout << "Last Name: ";
+	getline(cin, editedUser.lastName);
 
 	cout << "Email: ";
 	getline(cin, editedUser.email);
@@ -548,9 +550,13 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 			break;
 
 		case '4':
+			cout << "First Name: ";
+			getline(cin, editedUser.firstName);
+			break;
+
 		case '5':
-			cout << "Full Name: ";
-			getline(cin, editedUser.fullName);
+			cout << "Last Name: ";
+			getline(cin, editedUser.lastName);
 			break;
 
 		case '6':
@@ -688,7 +694,8 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 		user2.sessionID = 55324;
 		user2.username = "nfrogley";
 		user2.password = "password";
-		user2.fullName = "Nick Frogley";
+		user2.firstlName = "Nick";
+		user2.lastName = "Frogley";
 		user2.email = "nickfro@gmail.com";
 		user2.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
 		user2.phone = "860 214 9523";
