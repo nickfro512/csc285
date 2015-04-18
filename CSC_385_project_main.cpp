@@ -2,7 +2,7 @@
 CSC 385 project - Library Management System
 
 
-User and media add and list currently work
+User and media add, delete, edit, list currently work
 
 Known bugs:
 Current way media/user IDing is set up, deleting records will break the ID system
@@ -10,21 +10,17 @@ Current way media/user IDing is set up, deleting records will break the ID syste
 STUFF THAT STILL NEEDS TO BE DONE:
 
 USER:
-delete
 login
 logout
 checkin
 checkout
 get checked out list
-update
 search
 
 MEDIA:
 
-Update
 Checkin
 Checkout
-Delete
 Search
 
 
@@ -39,11 +35,9 @@ Login interface - prompt for username, password
 
 Admin interface
 User menu
-Edit user
-Search users by field X
+	Search users by field X
 Media menu
-Edit media
-Search media by field X
+	Search media by field X
 
 
 User interface
@@ -165,11 +159,13 @@ public:
 class UserList
 {
 public:
-	int userCounter = 0;	// number of users added so far, used to determined new user IDs
+	// number of users added so far, used to determined new user IDs
 	vector<User> list;
+	int userCounter;
 
 	UserList::UserList()
 	{
+		userCounter = 0;
 	}
 
 	// get user by ID
@@ -220,10 +216,10 @@ public:
 		return true;
 	}
 
-	bool User::edit(int id, User editedUser)
+	bool UserList::edit(int id, User editedUser)
 	{
-		targetIndex = getUserIndex(id);
-		list[userIndex] = editedUser;
+		int targetIndex = getUserIndex(id);
+		list[targetIndex] = editedUser;
 		return true;
 	}
 
@@ -242,6 +238,8 @@ public:
 	vector<int> UserList::getAllUserIDs()
 	{
 		vector<int> userIDs;
+		User theUser;
+
 		for (int i = 0; i < list.size(); i++)
 		{
 			theUser = list[i];
@@ -283,7 +281,7 @@ public:
 		return true;
 	}
 
-	bool UserHandler::editUser(int id, editedUser)
+	bool UserHandler::editUser(int id, User editedUser)
 	{
 		theUserList.edit(id, editedUser);
 		return true;
@@ -377,33 +375,89 @@ class MediaList
 {
 public:
 	vector<Media> list;
+	int mediaCounter;
 
 	MediaList::MediaList()
 	{
+		mediaCounter = 0;
 	}
 
 	// get media by ID
 	Media MediaList::getMedia(int id)
 	{
-		return list[id];
+		Media theMedia;
+		for (unsigned int i = 0; i < list.size(); i++)
+		{
+			theMedia = list[i];
+			if (theMedia.mediaID == id)
+			{
+				return theMedia;
+			}
+		}
+		return theMedia;		// no Media found with matching ID
+	}
+
+	// get index in current list of media with provided ID
+	int MediaList::getMediaIndex(int id)
+	{
+		Media theMedia;
+		unsigned int i;
+		for (i = 0; i < list.size(); i++)
+		{
+			theMedia = list[i];
+			if (theMedia.mediaID == id)
+			{
+				return i;
+			}
+		}
+		return -1;		// no Media found with matching ID
 	}
 
 	// Add media
 	int MediaList::add(Media theMedia)
 	{
-		theMedia.mediaID = list.size(); // media ID is the index media was added at in the list
+		theMedia.mediaID = mediaCounter; // media ID is the index media was added at in the list
+		mediaCounter++;
 		list.push_back(theMedia);
 		return theMedia.mediaID;
 	}
 
-	// !!!! This doesn't work yet
 	bool MediaList::remove(int id)
 	{
-		list.erase(list.begin() + id);
-		/*Media theMedia;
-		theMedia = getMedia(id);
-		theMedia.mediaType = 'x';
-		return true;*/
+		int targetIndex = getMediaIndex(id);
+		list.erase(list.begin() + targetIndex);
+		return true;
+	}
+
+	bool MediaList::edit(int id, Media editedMedia)
+	{
+		int targetIndex = getMediaIndex(id);
+		list[targetIndex] = editedMedia;
+		return true;
+	}
+
+	
+
+	void MediaList::listAll()
+	{
+		Media theMedia;
+		for (int i = 0; i < list.size(); i++)
+		{
+			theMedia = list[i];
+			theMedia.displayInformation();
+		}
+	}
+
+	vector<int> MediaList::getAllMediaIDs()
+	{
+		vector<int> MediaIDs;
+		Media theMedia;
+
+		for (int i = 0; i < list.size(); i++)
+		{
+			theMedia = list[i];
+			MediaIDs.push_back(theMedia.mediaID);
+		}
 	}
 
 	int MediaList::getSize()
@@ -417,7 +471,7 @@ public:
 class MediaHandler
 {
 public:
-	MediaList theList;
+	MediaList theMediaList;
 
 	// MediaHandler constructor
 	MediaHandler::MediaHandler()
@@ -427,7 +481,7 @@ public:
 	// get a media from the media list by their ID number
 	Media MediaHandler::getMedia(int id)
 	{
-		Media theMedia = theList.getMedia(id);
+		Media theMedia = theMediaList.getMedia(id);
 		return theMedia;
 	}
 
@@ -435,24 +489,31 @@ public:
 	int MediaHandler::addMedia(Media theMedia)
 	{
 		int newMediaID;
-		newMediaID = theList.add(theMedia);
+		newMediaID = theMediaList.add(theMedia);
 		return newMediaID;
 	}
 
 	bool MediaHandler::deleteMedia(int id)
 	{
-		//theList.remove(id);
+		theMediaList.remove(id);
+		return true;
+	}
+
+	bool MediaHandler::editMedia(int id, Media editedMedia)
+	{
+		theMediaList.edit(id, editedMedia);
 		return true;
 	}
 
 	void MediaHandler::listAllMedia()
 	{
-		Media theMedia;
-		for (int i = 0; i < theList.getSize(); i++)
+		theMediaList.listAll();
+		/*Media theMedia;
+		for (int i = 0; i < theMediaList.getSize(); i++)
 		{
 			theMedia = getMedia(i);
 			theMedia.displayInformation();
-		}
+		}*/
 	}
 
 	bool MediaHandler::checkIn()
@@ -536,7 +597,7 @@ User menu_user_add(UserHandler theHandler)
 // Menu to allow admin to edit user records
 User menu_user_edit(User theUser, UserHandler theHandler)
 {
-	char edit_command = 'x';
+	char edit_command = 'z';
 	User editedUser = theUser;
 
 	while (edit_command != 'x')
@@ -545,14 +606,14 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 
 		cout << "Select field to edit" << endl << endl;
 
-		cout << "(1) User Type " << endl;
-		cout << "(2) Username: " << endl;
-		cout << "(3) Password: " << endl;
-		cout << "(4) First Name: " << endl;
-		cout << "(5) Last Name: " << endl;
-		cout << "(6) Email: " << endl;
-		cout << "(7) Address: " << endl;
-		cout << "(8) Phone: " << endl;
+		cout << "(1) User Type" << endl;
+		cout << "(2) Username" << endl;
+		cout << "(3) Password" << endl;
+		cout << "(4) First Name" << endl;
+		cout << "(5) Last Name" << endl;
+		cout << "(6) Email" << endl;
+		cout << "(7) Address" << endl;
+		cout << "(8) Phone" << endl;
 		cout << "(a) Edit all" << endl;
 		cout << "(x) Finish editing" << endl;
 
@@ -562,7 +623,10 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 		switch (edit_command)
 		{
 		case 'a':
-			editedUser = menu_user_add(theHandler);
+			editedUser = menu_user_add(theHandler);		// use user add menu to get all new information for this user ID
+			// get userID, session ID etc from original user record
+			editedUser.userID = theUser.userID;
+			editedUser.sessionID = theUser.sessionID;
 			break;
 
 		case '1':
@@ -604,10 +668,14 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 			cout << "Phone: ";
 			getline(cin, editedUser.phone);
 			break;
-
+		
 		default:
+			cout << "Invalid command!" << endl;
 			break;
 		}
+
+		//editedUser.userID = theUser.userID;
+		//editedUser.sessionID = theUser.sessionID;
 	}
 
 
@@ -649,7 +717,7 @@ Media menu_media_add(MediaHandler theHandler)
 
 Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 {
-	char edit_command = 'x';
+	char edit_command = 'z';
 	Media editedMedia = theMedia;
 
 	while (edit_command != 'x')
@@ -673,7 +741,9 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 		switch (edit_command)
 		{
 		case 'a':
-			editedMedia = menu_media_add(theHandler);
+			editedMedia = menu_media_add(theHandler);		// use the media add menu to get all new info for this media ID
+			// get media ID etc from original media record
+			editedMedia.mediaID = theMedia.mediaID;
 			break;
 
 		case '1':
@@ -720,18 +790,30 @@ int main()
 	Media theMedia;
 	MediaHandler theMediaHandler;
 
-	User user2;				// initialize with a user for testing
-	user2.userType = 'a';
-	user2.sessionID = 55324;
-	user2.username = "nfrogley";
-	user2.password = "password";
-	user2.firstlName = "Nick";
-	user2.lastName = "Frogley";
-	user2.email = "nickfro@gmail.com";
-	user2.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
-	user2.phone = "860 214 9523";
+	User testUser;				// initialize with a user for testing
+	testUser.userType = 'a';
+	testUser.sessionID = 55324;
+	testUser.username = "nfrogley";
+	testUser.password = "password";
+	testUser.firstName = "Nick";
+	testUser.lastName = "Frogley";
+	testUser.email = "nickfro@gmail.com";
+	testUser.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
+	testUser.phone = "860 214 9523";
 
-	theUserHandler.addUser(user2);			// add first user
+	theUserHandler.addUser(testUser);			// add first user
+
+	Media testMedia;			// initialize with a media for testing
+	testMedia.mediaType = 'b';
+	testMedia.isbn = "0553386794";
+	testMedia.title = "Game of Thrones";
+	testMedia.author = "George R. R. Martin";
+	testMedia.subject = "Fantasy";
+	testMedia.copies = 5;
+
+	theMediaHandler.addMedia(testMedia);	// add first media
+
+	
 
 	//theUser = theUserHandler.getUser(0);	// get the new user record
 	// theUser.displayInformation();		// print record
@@ -754,6 +836,7 @@ int main()
 
 		if (menu_select == 0)	// media menu
 		{
+			Media editedMedia;
 			switch (menu_command)
 			{
 				case 'a':
@@ -761,6 +844,31 @@ int main()
 					theMedia = menu_media_add(theMediaHandler);
 					newMediaID = theMediaHandler.addMedia(theMedia);
 					cout << "Successfully added Media ID " << newMediaID << endl;
+					break;
+				case 'e':
+					int editID;
+					cout << endl << "Media ID to edit: ";
+					do
+					{
+						cin >> editID;
+						theMedia = theMediaHandler.getMedia(editID);
+						if (theMedia.mediaID == -1)
+						{
+							cout << "Media ID not found!" << endl;
+						}
+					}
+					while(theMedia.mediaID == -1);
+
+					editedMedia = menu_media_edit(theMedia, theMediaHandler);
+					theMediaHandler.editMedia(editID, editedMedia);
+					cout << endl << "Successfully edited Media ID " << editID << endl;
+					break;
+				case 'd':
+					int deleteID;
+					cout << endl << "Media ID to delete: ";
+					cin >> deleteID;
+					theMediaHandler.deleteMedia(deleteID);
+					cout << endl << "Successfully deleted Media ID " << deleteID << endl;
 					break;
 				case 'l':
 					cout << "---------------------------------- MEDIA LIST" << endl;
@@ -772,20 +880,39 @@ int main()
 
 		else	// user menu
 		{
+			User editedUser;
 			switch (menu_command)
 			{
 				case 'a':
-					int editedUserID;
+					int newUserID;
 					theUser = menu_user_add(theUserHandler);
-					editedUserID = theUserHandler.addUser(theUser);
-					cout << "Successfully added user ID " << editedUserID << endl;
+					newUserID = theUserHandler.addUser(theUser);
+					cout << "Successfully added user ID " << newUserID << endl;
 					break;
-				case 'd':			// !!!! This doesn't work yet
+				case 'e':
+					int editID;
+					cout << endl << "User ID to edit: ";
+					do
+					{
+						cin >> editID;
+						theUser = theUserHandler.getUser(editID);
+						if (theUser.userID == -1)
+						{
+							cout << "User ID not found!" << endl;
+						}
+					}
+					while(theUser.userID == -1);
+
+					editedUser = menu_user_edit(theUser, theUserHandler);
+					theUserHandler.editUser(editID, editedUser);
+					cout << endl << "Successfully edited user ID " << editID << endl;
+					break;
+				case 'd':
 					int deleteID;
 					cout << endl << "User ID to delete: ";
 					cin >> deleteID;
 					theUserHandler.deleteUser(deleteID);
-					cout << endl << "Successfully deleted user ID " << deleteID;
+					cout << endl << "Successfully deleted user ID " << deleteID << endl;
 					break;
 				case 'l':
 					cout << "---------------------------------- USER LIST" << endl;
