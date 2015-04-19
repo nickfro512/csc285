@@ -2,10 +2,13 @@
 CSC 385 project - Library Management System
 
 
-User and media add, delete, edit, list currently work
+User and media add, delete, edit, list currently work. User and Media are read in from user_data.txt and 
+media_data.txt now. Changes are saved on program exit by writing to those files. Basically that's going to be
+our standin for the actual database that's in the specs.
+
 
 Known bugs:
-Current way media/user IDing is set up, deleting records will break the ID system
+Entering text for copies when adding/editing media breaks program
 
 STUFF THAT STILL NEEDS TO BE DONE:
 
@@ -45,18 +48,20 @@ Search menu
 Checkin/checkout menu
 
 
-DATABASE: 	Need to get a proper database setup or at least something that will read a CSV file or something
-so changes/additions are saved on program exit
-
 */
 
 #include "stdafx.h"
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <ctime>
 
 using namespace std;
+
+// filenames for user and media data
+const string userDataFile = "user_data.txt";
+const string mediaDataFile = "media_data.txt";
 
 // Library system users
 class User
@@ -161,12 +166,14 @@ class UserList
 public:
 	// number of users added so far, used to determined new user IDs
 	vector<User> list;
-	int userCounter;
+	int userIdCounter;
 
 	UserList::UserList()
 	{
-		userCounter = 0;
+		userIdCounter = 0;
 	}
+
+	
 
 	// get user by ID
 	User UserList::getUser(int id)
@@ -202,13 +209,13 @@ public:
 	// Add user
 	int UserList::add(User theUser)
 	{
-		theUser.userID = userCounter;
-		userCounter++;
+		theUser.userID = userIdCounter;		 // user is assigned newest available ID based on count of users added so far (userCounter)
+		userIdCounter++;
 		list.push_back(theUser);
 		return theUser.userID;
 	}
 
-	// !!!! This doesn't work yet
+	// Remove user
 	bool UserList::remove(int id)
 	{
 		int targetIndex = getUserIndex(id);
@@ -216,15 +223,15 @@ public:
 		return true;
 	}
 
+	// Edit a user record (replaces old record with editedUser record)
 	bool UserList::edit(int id, User editedUser)
 	{
 		int targetIndex = getUserIndex(id);
 		list[targetIndex] = editedUser;
 		return true;
 	}
-
 	
-
+	// display list of all users
 	void UserList::listAll()
 	{
 		User theUser;
@@ -235,6 +242,7 @@ public:
 		}
 	}
 
+	// get a list of all the user IDs currently in the user list
 	vector<int> UserList::getAllUserIDs()
 	{
 		vector<int> userIDs;
@@ -244,6 +252,121 @@ public:
 		{
 			theUser = list[i];
 			userIDs.push_back(theUser.userID);
+		}
+	}
+
+	// populate the User list by reading users in from a text file
+	bool UserList::readListFromFile(string filename)
+	{
+		string line;
+		string firstLine;
+
+		vector<User> newList;				// new list of users to read in to
+		User theUser;
+
+		ifstream theFile(filename);			// attempt to open file
+
+		if (theFile.is_open())
+		{
+			getline(theFile, line);
+			userIdCounter = atoi(line.c_str());	// convert string to int for user ID counter value (gets used to assign new user IDs)
+
+			while(getline(theFile, firstLine))		// get the first line of the next user record if we're not at end of file
+			{
+				// read a User record in from the file
+		
+				theUser.userID = atoi(firstLine.c_str());		// convert string to int for user ID value
+
+				getline(theFile, line);
+				theUser.userType = line.at(0);					// get first character of string for userType value
+
+				getline(theFile, line);
+				theUser.sessionID = atoi(line.c_str());		// convert string to int for session ID value
+
+				getline(theFile, line);
+				theUser.username = line;
+
+				getline(theFile, line);
+				theUser.password = line;
+
+				getline(theFile, line);
+				theUser.firstName = line;
+
+				getline(theFile, line);
+				theUser.lastName = line;
+
+				getline(theFile, line);
+				theUser.email = line;
+
+				getline(theFile, line);
+				theUser.address = line;
+
+				getline(theFile, line);
+				theUser.phone = line;
+
+				/*
+				while(getline(theFile, line != "x")
+				{
+					theUser.checkedOut.push_back(atoi(line.c_str()));
+				}*/
+
+				newList.push_back(theUser);			// add this user to new user list
+						
+			}
+
+			list = newList;					// replace current list with the new list
+
+			cout << "Successfully read in " << list.size() << " users from file " << filename << endl;
+
+			theFile.close();				// close file and return true (file read success)
+			return true;
+		}
+
+		else				// failed to open file, so display error and return false (file read failure)
+		{
+			cout << "Couldn't open file " << filename << endl;
+			return false;
+		}
+	}
+
+	// write the current user list to a text file
+	bool UserList::writeListToFile(string filename)
+	{
+		User theUser;
+
+		ofstream theFile(filename);			// open file for writing		
+
+		if (theFile.is_open())
+		{
+			theFile << userIdCounter << endl;
+
+			// iterate through all users and write them to file
+			for (int i = 0; i < list.size(); i++)
+			{
+				theUser = list[i];					// get user
+
+				//	write all user information to file
+				theFile << theUser.userID << endl;
+				theFile << theUser.userType << endl;
+				theFile << theUser.sessionID << endl;
+				theFile << theUser.username << endl;
+				theFile << theUser.password << endl;
+				theFile << theUser.firstName<< endl;
+				theFile << theUser.lastName<< endl;
+				theFile << theUser.email << endl;
+				theFile << theUser.address << endl;
+				theFile << theUser.phone << endl;
+				cout << "Successfully wrote user at index " << i << " to " << filename << endl;
+			}
+
+			theFile.close();				// close file and return true (file read success)
+			return true;
+		}
+
+		else				// failed to open file, so display error and return false (file read failure)
+		{
+			cout << "Couldn't open file " << filename << endl;
+			return false;
 		}
 	}
 
@@ -260,6 +383,18 @@ public:
 	{
 	}
 
+	// read user records into the user list from userDataFile (text file specified at top of program)
+	bool UserHandler::readUsers()
+	{
+		return theUserList.readListFromFile(userDataFile);
+	}
+
+	// write current user records out to userDataFile (text file specified at the top of the program)
+	bool UserHandler::writeUsers()
+	{
+		return theUserList.writeListToFile(userDataFile);
+	}
+
 	// get a user from the user list by their ID number
 	User UserHandler::getUser(int id)
 	{
@@ -270,9 +405,9 @@ public:
 	// add a new user to the user list
 	int UserHandler::addUser(User theUser)
 	{
-		int editedUserID;
-		editedUserID = theUserList.add(theUser);
-		return editedUserID;
+		int newUserID;
+		newUserID = theUserList.add(theUser);
+		return newUserID;
 	}
 
 	bool UserHandler::deleteUser(int id)
@@ -290,12 +425,6 @@ public:
 	void UserHandler::listAllUsers()
 	{
 		theUserList.listAll();
-		/*User theUser;
-		for (int i = 0; i < theUserList.getSize(); i++)
-		{
-			theUser = getUser(i);
-			theUser.displayInformation();
-		}*/
 	}
 };
 
@@ -375,11 +504,11 @@ class MediaList
 {
 public:
 	vector<Media> list;
-	int mediaCounter;
+	int mediaIdCounter;
 
 	MediaList::MediaList()
 	{
-		mediaCounter = 0;
+		mediaIdCounter = 0;
 	}
 
 	// get media by ID
@@ -416,8 +545,8 @@ public:
 	// Add media
 	int MediaList::add(Media theMedia)
 	{
-		theMedia.mediaID = mediaCounter; // media ID is the index media was added at in the list
-		mediaCounter++;
+		theMedia.mediaID = mediaIdCounter; // media is assigned newest available ID based on count of Media added so far (mediaCounter)
+		mediaIdCounter++;
 		list.push_back(theMedia);
 		return theMedia.mediaID;
 	}
@@ -465,6 +594,103 @@ public:
 		return list.size();
 	}
 
+	bool MediaList::readListFromFile(string filename)
+	{
+		string line;
+		string firstLine;
+
+		vector<Media> newList;				// new list of media to read in to
+		Media theMedia;
+
+		ifstream theFile(filename);			// attempt to open file
+
+		if (theFile.is_open())
+		{
+			getline(theFile, line);
+			mediaIdCounter = atoi(line.c_str());	// convert string to int for media ID counter value
+
+			while(getline(theFile, firstLine))		// get the first line of the next media record if we're not at end of file
+			{
+				// read a Media record in from the file
+		
+				theMedia.mediaID = atoi(firstLine.c_str());		// convert string to int for media ID value
+
+				getline(theFile, line);
+				theMedia.mediaType = line.at(0);					// get first character of string for mediaType value
+
+				getline(theFile, line);
+				theMedia.isbn = line;
+
+				getline(theFile, line);
+				theMedia.title = line;
+
+				getline(theFile, line);
+				theMedia.author = line;
+
+				getline(theFile, line);
+				theMedia.subject = line;
+
+				getline(theFile, line);
+				theMedia.copies = atoi(line.c_str());	
+
+				newList.push_back(theMedia);			// add this media to new media list
+						
+			}
+
+			list = newList;					// replace current list with the new list
+
+			cout << "Successfully read in " << list.size() << " media from file " << filename << endl;
+
+			theFile.close();				// close file and return true (file read success)
+			return true;
+		}
+
+		else				// failed to open file, so display error and return false (file read failure)
+		{
+			cout << "Couldn't open file " << filename << endl;
+			return false;
+		}
+	}
+
+	// write the current media list to a text file
+	bool MediaList::writeListToFile(string filename)
+	{
+		Media theMedia;
+
+		ofstream theFile(filename);			// open file for writing		
+
+		if (theFile.is_open())
+		{
+			theFile << mediaIdCounter << endl;
+
+			// iterate through all medias and write them to file
+			for (int i = 0; i < list.size(); i++)
+			{
+				theMedia = list[i];					// get media
+
+				//	write all media information to file
+				theFile << theMedia.mediaID << endl;
+				theFile << theMedia.mediaType << endl;
+				theFile << theMedia.isbn << endl;
+				theFile << theMedia.title << endl;
+				theFile << theMedia.author << endl;
+				theFile << theMedia.subject << endl;
+				theFile << theMedia.copies << endl;
+				
+				cout << "Successfully wrote media at index " << i << " to " << filename << endl;
+			}
+
+			theFile.close();				// close file and return true (file read success)
+			return true;
+		}
+
+		else				// failed to open file, so display error and return false (file read failure)
+		{
+			cout << "Couldn't open file " << filename << endl;
+			return false;
+		}
+	}
+
 };
 
 // facilitates operations on the Media objects in MediaList objects
@@ -477,6 +703,19 @@ public:
 	MediaHandler::MediaHandler()
 	{
 	}
+
+	// read media records into the media list from mediaDataFile (text file specified at top of program)
+	bool MediaHandler::readMedia()
+	{
+		return theMediaList.readListFromFile(mediaDataFile);
+	}
+
+	// write current media records out to mediaDataFile (text file specified at the top of the program)
+	bool MediaHandler::writeMedia()
+	{
+		return theMediaList.writeListToFile(mediaDataFile);
+	}
+
 
 	// get a media from the media list by their ID number
 	Media MediaHandler::getMedia(int id)
@@ -508,12 +747,6 @@ public:
 	void MediaHandler::listAllMedia()
 	{
 		theMediaList.listAll();
-		/*Media theMedia;
-		for (int i = 0; i < theMediaList.getSize(); i++)
-		{
-			theMedia = getMedia(i);
-			theMedia.displayInformation();
-		}*/
 	}
 
 	bool MediaHandler::checkIn()
@@ -534,18 +767,19 @@ class InterfaceHandler
 // print the menu and get a command from user
 char menu_select_get(int menu_type)
 {
-	cout << "MENU: " << endl;
 	char command = 'x';
 	User theUser;
 	switch (menu_type)
 	{
 	case 0:
+		cout << "MEDIA MENU: " << endl;
 		cout << "(a) Add media item" << endl;
 		cout << "(d) Delete media item" << endl;
 		cout << "(e) Edit media item" << endl;
 		cout << "(l) List media items" << endl;
 		break;
 	case 1:
+		cout << "USER MENU: " << endl;
 		cout << "(a) Add user" << endl;
 		cout << "(d) Delete user" << endl;
 		cout << "(e) Edit user" << endl;
@@ -562,7 +796,7 @@ char menu_select_get(int menu_type)
 
 // allow admin to input a new user record field by field
 // NOTE: will want to validate these inputs eventually
-User menu_user_add(UserHandler theHandler)
+User menu_user_add()
 {
 	User editedUser;
 
@@ -595,7 +829,7 @@ User menu_user_add(UserHandler theHandler)
 }
 
 // Menu to allow admin to edit user records
-User menu_user_edit(User theUser, UserHandler theHandler)
+User menu_user_edit(User theUser)
 {
 	char edit_command = 'z';
 	User editedUser = theUser;
@@ -623,7 +857,7 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 		switch (edit_command)
 		{
 		case 'a':
-			editedUser = menu_user_add(theHandler);		// use user add menu to get all new information for this user ID
+			editedUser = menu_user_add();		// use user add menu to get all new information for this user ID
 			// get userID, session ID etc from original user record
 			editedUser.userID = theUser.userID;
 			editedUser.sessionID = theUser.sessionID;
@@ -687,7 +921,7 @@ User menu_user_edit(User theUser, UserHandler theHandler)
 
 // allow admin to input a new media record field by field
 // NOTE: will want to validate these inputs eventually
-Media menu_media_add(MediaHandler theHandler)
+Media menu_media_add()
 {
 	Media newMedia;
 
@@ -710,12 +944,10 @@ Media menu_media_add(MediaHandler theHandler)
 	cout << "Copies: ";
 	cin >> newMedia.copies;
 
-
-
 	return newMedia;
 }
 
-Media menu_media_edit(Media theMedia, MediaHandler theHandler)
+Media menu_media_edit(Media theMedia)
 {
 	char edit_command = 'z';
 	Media editedMedia = theMedia;
@@ -741,7 +973,7 @@ Media menu_media_edit(Media theMedia, MediaHandler theHandler)
 		switch (edit_command)
 		{
 		case 'a':
-			editedMedia = menu_media_add(theHandler);		// use the media add menu to get all new info for this media ID
+			editedMedia = menu_media_add();		// use the media add menu to get all new info for this media ID
 			// get media ID etc from original media record
 			editedMedia.mediaID = theMedia.mediaID;
 			break;
@@ -801,8 +1033,14 @@ int main()
 	testUser.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
 	testUser.phone = "860 214 9523";
 
-	theUserHandler.addUser(testUser);			// add first user
+	//theUserHandler.addUser(testUser);			// add first user
+	//theUserHandler.writeUsers();
+//	return 0;
 
+
+	theUserHandler.readUsers();
+	
+	
 	Media testMedia;			// initialize with a media for testing
 	testMedia.mediaType = 'b';
 	testMedia.isbn = "0553386794";
@@ -811,7 +1049,9 @@ int main()
 	testMedia.subject = "Fantasy";
 	testMedia.copies = 5;
 
-	theMediaHandler.addMedia(testMedia);	// add first media
+	//theMediaHandler.addMedia(testMedia);	// add first media
+
+	theMediaHandler.readMedia();
 
 	
 
@@ -841,7 +1081,7 @@ int main()
 			{
 				case 'a':
 					int newMediaID;
-					theMedia = menu_media_add(theMediaHandler);
+					theMedia = menu_media_add();
 					newMediaID = theMediaHandler.addMedia(theMedia);
 					cout << "Successfully added Media ID " << newMediaID << endl;
 					break;
@@ -859,7 +1099,7 @@ int main()
 					}
 					while(theMedia.mediaID == -1);
 
-					editedMedia = menu_media_edit(theMedia, theMediaHandler);
+					editedMedia = menu_media_edit(theMedia);
 					theMediaHandler.editMedia(editID, editedMedia);
 					cout << endl << "Successfully edited Media ID " << editID << endl;
 					break;
@@ -885,7 +1125,7 @@ int main()
 			{
 				case 'a':
 					int newUserID;
-					theUser = menu_user_add(theUserHandler);
+					theUser = menu_user_add();
 					newUserID = theUserHandler.addUser(theUser);
 					cout << "Successfully added user ID " << newUserID << endl;
 					break;
@@ -903,7 +1143,7 @@ int main()
 					}
 					while(theUser.userID == -1);
 
-					editedUser = menu_user_edit(theUser, theUserHandler);
+					editedUser = menu_user_edit(theUser);
 					theUserHandler.editUser(editID, editedUser);
 					cout << endl << "Successfully edited user ID " << editID << endl;
 					break;
@@ -923,6 +1163,9 @@ int main()
 		}
 
 	}
+
+	theUserHandler.writeUsers();
+	theMediaHandler.writeMedia();
 
 	return 0;
 }
