@@ -443,8 +443,8 @@ public:
     string author;				// media author/artist name
     string subject;				// media subject (history, scifi, etc.)
     int copies;					// number of copies available
-    vector<time_t> due_dates;		// due dates for copies that have been checked out
-    vector<int> checked_out_IDs;	// user IDs of users who have checked out a copy
+    vector<time_t> dueDates;		// due dates for copies that have been checked out
+    vector<int> checkedOutUserIds;	// user IDs of users who have checked out a copy
     
     // constructor
     Media()
@@ -497,6 +497,15 @@ public:
         cout << "Copies: " << copies << endl;
         
         cout << "------------------" << endl;
+    }
+    
+    void displayCheckedOutInformation()
+   	{
+        cout << "Checked out by: " << endl;
+        for (unsigned int i = 0; i < checkedOutUserIds.size(); i++)
+        {
+            cout << "User " << checkedOutUserIds[i] << endl;
+        }
     }
     
 };
@@ -569,15 +578,7 @@ public:
     
     
     
-    void listAll()
-    {
-        Media theMedia;
-        for (int i = 0; i < list.size(); i++)
-        {
-            theMedia = list[i];
-            theMedia.displayInformation();
-        }
-    }
+    
     
     vector<int> getAllMediaIDs()
     {
@@ -595,6 +596,24 @@ public:
     int getSize()
     {
         return list.size();
+    }
+    
+    bool checkOut(int mediaID, int userID)
+    {
+        Media theMedia = getMedia(mediaID);
+        if (theMedia.copies > 0)
+        {
+            theMedia.checkedOutUserIds.push_back(userID);
+            theMedia.copies--;
+            edit(mediaID, theMedia);
+            cout << "\n\nCheck out succeeded, " << theMedia.copies << " copies left!\n\n";
+            return true;
+        }
+        else
+        {
+            cout << "\n\nCheck out failed, no copies left!\n\n";
+            return false;
+        }
     }
     
     bool readListFromFile(string filename)
@@ -694,6 +713,17 @@ public:
         }
     }
     
+    void listAll()
+    {
+        Media theMedia;
+        for (int i = 0; i < list.size(); i++)
+        {
+            theMedia = list[i];
+            theMedia.displayInformation();
+            theMedia.displayCheckedOutInformation();
+        }
+    }
+    
 };
 
 // facilitates operations on the Media objects in MediaList objects
@@ -757,9 +787,10 @@ public:
         return false;
     }
     
-    bool checkOut()
+    bool checkOutMedia(int mediaID, int userID)
     {
-        return false;
+        theMediaList.checkOut(mediaID, userID);
+        return true;
     }
     
 };
@@ -782,6 +813,7 @@ char menu_select_get(int menu_type)
             cout << "(d) Delete media item" << endl;
             cout << "(e) Edit media item" << endl;
             cout << "(l) List media items" << endl;
+            cout << "(c) Check out media item" << endl;
             break;
         case 1:
             cout << "USER MENU: " << endl;
@@ -987,12 +1019,12 @@ Media menu_media_edit(Media theMedia)
                 cin >> editedMedia.mediaType;
                 cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
                 break;
-
+                
             case '2':
-            	cout << "ISBN: ";
-            	getline(cin, editedMedia.isbn);
-            	break;
-
+                cout << "ISBN: ";
+                getline(cin, editedMedia.isbn);
+                break;
+                
                 
             case '3':
                 cout << "Title: ";
@@ -1000,7 +1032,7 @@ Media menu_media_edit(Media theMedia)
                 break;
                 
             case '4':
-
+                
                 cout << "Author: ";
                 getline(cin, editedMedia.author);
                 break;
@@ -1019,6 +1051,27 @@ Media menu_media_edit(Media theMedia)
                 break;
         }
     }
+    return editedMedia;
+}
+
+Media menuMediaCheckOut(MediaHandler theMediaHandler, UserHandler theUserHandler)
+{
+    
+    
+    int userID;
+    int mediaID;
+    
+    theMediaHandler.listAllMedia();
+    cout << "Media ID to check out: ";
+    cin >> mediaID;
+    theUserHandler.listAllUsers();
+    cout << "User ID checking this out: ";
+    cin >> userID;
+    cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+    
+    Media editedMedia = theMediaHandler.getMedia(mediaID);
+    theMediaHandler.checkOutMedia(mediaID, userID);
+    
     return editedMedia;
 }
 
@@ -1125,6 +1178,10 @@ int main()
                 case 'l':
                     cout << "---------------------------------- MEDIA LIST" << endl;
                     theMediaHandler.listAllMedia();
+                    break;
+                case 'c':
+                    editedMedia = menuMediaCheckOut(theMediaHandler, theUserHandler);
+                    editedMedia.displayInformation();
                     break;
                     
             }
