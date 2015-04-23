@@ -50,6 +50,7 @@
  
  */
 
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -77,7 +78,7 @@ public:
     string email;					// user's email
     string address;					// user's address
     string phone;					// user's phone number
-    vector<int> checkedOutMedia;	// array with ID's of media items user has checked out of the system
+    vector<int> checkedOutMediaIds;	// array with ID's of media items user has checked out of the system
     
     // constructor
     User()
@@ -132,6 +133,19 @@ public:
         cout << "Phone number: " << phone << endl;
         
         cout << "------------------" << endl;
+    }
+    
+    void displayCheckedOutInformation()
+   	{
+        if (checkedOutMediaIds.size() > 0)
+        {
+            cout << "Checked out media: " << endl;
+            for (unsigned int i = 0; i < checkedOutMediaIds.size(); i++)
+            {
+                cout << "Media " << checkedOutMediaIds[i] << endl;
+            }
+            cout << "---------------" << endl;
+        }
     }
     
     int login()
@@ -232,6 +246,20 @@ public:
         return true;
     }
     
+    bool checkIn(int mediaID, int userID)
+    {
+        return false;
+    }
+    
+    bool checkOut(int mediaID, int userID)
+    {
+        User theUser = getUser(userID);
+        theUser.checkedOutMediaIds.push_back(mediaID);
+        edit(userID, theUser);
+        cout << "\n\nCheck out succeeded on user record ID " << userID << endl;
+        return true;
+    }
+    
     // display list of all users
     void listAll()
     {
@@ -240,6 +268,7 @@ public:
         {
             theUser = list[i];
             theUser.displayInformation();
+            theUser.displayCheckedOutInformation();
         }
     }
     
@@ -270,52 +299,61 @@ public:
         
         if (theFile.is_open())
         {
-            getline(theFile, line);
-            userIdCounter = atoi(line.c_str());	// convert string to int for user ID counter value (gets used to assign new user IDs)
+            if (getline(theFile, line))
+			{
+				userIdCounter = atoi(line.c_str());	// convert string to int for user ID counter value (gets used to assign new user IDs)
             
-            while(getline(theFile, firstLine))		// get the first line of the next user record if we're not at end of file
-            {
-                // read a User record in from the file
+				while(getline(theFile, firstLine))		// get the first line of the next user record if we're not at end of file
+				{
+					// read a User record in from the file
                 
-                theUser.userID = atoi(firstLine.c_str());		// convert string to int for user ID value
+					theUser.userID = atoi(firstLine.c_str());		// convert string to int for user ID value
                 
-                getline(theFile, line);
-                theUser.userType = line.at(0);					// get first character of string for userType value
+					getline(theFile, line);
+					theUser.userType = line.at(0);					// get first character of string for userType value
                 
-                getline(theFile, line);
-                theUser.sessionID = atoi(line.c_str());		// convert string to int for session ID value
+					getline(theFile, line);
+					theUser.sessionID = atoi(line.c_str());		// convert string to int for session ID value
                 
-                getline(theFile, line);
-                theUser.username = line;
+					getline(theFile, line);
+					theUser.username = line;
                 
-                getline(theFile, line);
-                theUser.password = line;
+					getline(theFile, line);
+					theUser.password = line;
                 
-                getline(theFile, line);
-                theUser.firstName = line;
+					getline(theFile, line);
+					theUser.firstName = line;
                 
-                getline(theFile, line);
-                theUser.lastName = line;
+					getline(theFile, line);
+					theUser.lastName = line;
                 
-                getline(theFile, line);
-                theUser.email = line;
+					getline(theFile, line);
+					theUser.email = line;
                 
-                getline(theFile, line);
-                theUser.address = line;
+					getline(theFile, line);
+					theUser.address = line;
                 
-                getline(theFile, line);
-                theUser.phone = line;
+					getline(theFile, line);
+					theUser.phone = line;
                 
-                /*
-                 while(getline(theFile, line != "x")
-                 {
-                 theUser.checkedOut.push_back(atoi(line.c_str()));
-                 }*/
+				  /*
+					if(getline(theFile, line))
+					{
+						if (line.length() > 0)
+						{
+							while(line.at(0) != 'x' && line != "")
+							{
+								theUser.checkedOutMediaIds.push_back(atoi(line.c_str()));
+								getline(theFile, line);
+							}
+						}
+					}
+					*/
                 
-                newList.push_back(theUser);			// add this user to new user list
+					newList.push_back(theUser);			// add this user to new user list
                 
-            }
-            
+				}
+			}
             list = newList;					// replace current list with the new list
             
             cout << "Successfully read in " << list.size() << " users from file " << filename << endl;
@@ -358,6 +396,14 @@ public:
                 theFile << theUser.email << endl;
                 theFile << theUser.address << endl;
                 theFile << theUser.phone << endl;
+                
+                /*
+                for(unsigned int j = 0; j < theUser.checkedOutMediaIds.size(); j++)
+                {
+                    theFile << theUser.checkedOutMediaIds[j] << endl;
+                }
+				theFile << "x" << endl;
+                */                
                 cout << "Successfully wrote user at index " << i << " to " << filename << endl;
             }
             
@@ -421,6 +467,17 @@ public:
     bool editUser(int id, User editedUser)
     {
         theUserList.edit(id, editedUser);
+        return true;
+    }
+    
+    bool checkInMedia(int mediaID, int userID)
+    {
+        return false;
+    }
+    
+    bool checkOutMedia(int mediaID, int userID)
+    {
+        theUserList.checkOut(mediaID, userID);
         return true;
     }
     
@@ -501,10 +558,14 @@ public:
     
     void displayCheckedOutInformation()
    	{
-        cout << "Checked out by: " << endl;
-        for (unsigned int i = 0; i < checkedOutUserIds.size(); i++)
+        if (checkedOutUserIds.size() > 0)
         {
-            cout << "User " << checkedOutUserIds[i] << endl;
+            cout << "Checked out by: " << endl;
+            for (unsigned int i = 0; i < checkedOutUserIds.size(); i++)
+            {
+                cout << "User " << checkedOutUserIds[i] << endl;
+            }
+            cout << "---------------" << endl;
         }
     }
     
@@ -572,7 +633,10 @@ public:
     bool edit(int id, Media editedMedia)
     {
         int targetIndex = getMediaIndex(id);
+        //editedMedia.displayCheckedOutInformation();
         list[targetIndex] = editedMedia;
+        cout << endl << "NEW LIST" << endl;
+        list[targetIndex].displayCheckedOutInformation();
         return true;
     }
     
@@ -598,6 +662,11 @@ public:
         return list.size();
     }
     
+    bool checkIn(int mediaID, int userID)
+    {
+        return false;
+    }
+    
     bool checkOut(int mediaID, int userID)
     {
         Media theMedia = getMedia(mediaID);
@@ -606,12 +675,12 @@ public:
             theMedia.checkedOutUserIds.push_back(userID);
             theMedia.copies--;
             edit(mediaID, theMedia);
-            cout << "\n\nCheck out succeeded, " << theMedia.copies << " copies left!\n\n";
+            cout << "\n\nCheck out succeeded, " << theMedia.copies << " copies left\n\n";
             return true;
         }
         else
         {
-            cout << "\n\nCheck out failed, no copies left!\n\n";
+            cout << "\n\nCheck out failed, no copies left\n\n";
             return false;
         }
     }
@@ -628,8 +697,9 @@ public:
         
         if (theFile.is_open())
         {
-            getline(theFile, line);
-            mediaIdCounter = atoi(line.c_str());	// convert string to int for media ID counter value
+            if (getline(theFile, line))
+            {
+				mediaIdCounter = atoi(line.c_str());	// convert string to int for media ID counter value
             
             while(getline(theFile, firstLine))		// get the first line of the next media record if we're not at end of file
             {
@@ -655,8 +725,34 @@ public:
                 getline(theFile, line);
                 theMedia.copies = atoi(line.c_str());
                 
-                newList.push_back(theMedia);			// add this media to new media list
+                /*
+                if(getline(theFile, line))
+                {
+                    if (line.length() > 0)
+                    {
+                        while(line.at(0) != 'x' && line != "")
+                        {
+                            theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
+                            getline(theFile, line);
+                        }
+                    }
+                }*/
+
                 
+                /*
+                if (line.at(0) != 'x')
+                {
+                    
+                    while(line.at(0) != 'x')
+                    {
+                        theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
+                        getline(theFile, line);
+                    }
+                    
+                }*/
+
+                newList.push_back(theMedia);			// add this media to new media list
+			}
             }
             
             list = newList;					// replace current list with the new list
@@ -699,6 +795,14 @@ public:
                 theFile << theMedia.subject << endl;
                 theFile << theMedia.copies << endl;
                 
+				/*
+                for(unsigned int j = 0; j < theMedia.checkedOutUserIds.size(); j++)
+                {
+                    theFile << theMedia.checkedOutUserIds[j] << endl;
+                }
+                theFile << "x" << endl;
+                */
+
                 cout << "Successfully wrote media at index " << i << " to " << filename << endl;
             }
             
@@ -715,12 +819,10 @@ public:
     
     void listAll()
     {
-        Media theMedia;
         for (int i = 0; i < list.size(); i++)
         {
-            theMedia = list[i];
-            theMedia.displayInformation();
-            theMedia.displayCheckedOutInformation();
+            list[i].displayInformation();
+            list[i].displayCheckedOutInformation();
         }
     }
     
@@ -782,9 +884,10 @@ public:
         theMediaList.listAll();
     }
     
-    bool checkIn()
+    bool checkInMedia(int mediaID, int userID)
     {
-        return false;
+        theMediaList.checkIn(mediaID, userID);
+        return true;
     }
     
     bool checkOutMedia(int mediaID, int userID)
@@ -941,7 +1044,7 @@ User menu_user_edit(User theUser)
                 break;
                 
             default:
-                cout << "Invalid command!" << endl;
+                //cout << "Invalid command!" << endl;
                 break;
         }
         
@@ -1054,7 +1157,63 @@ Media menu_media_edit(Media theMedia)
     return editedMedia;
 }
 
-Media menuMediaCheckOut(MediaHandler theMediaHandler, UserHandler theUserHandler)
+vector<int> menuMediaSearch(MediaHandler theMediaHandler)
+{
+	vector<int> resultsList;
+    char search_command = 'z';
+	string search_term ="";
+	char search_term_char = 'z';
+
+	
+		cout << "Select field to search by" << endl << endl;
+        
+        cout << "(1) Media Type " << endl;
+        cout << "(2) ISBN number: " << endl;
+        cout << "(3) Title: " << endl;
+        cout << "(4) Author: " << endl;
+        cout << "(5) Subject: " << endl;
+        
+        
+        cin >> search_command;
+        cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+        
+        switch (search_command)
+        {
+            case '1':
+                cin >> search_term_char;
+                cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+                break;
+                
+            case '2':
+                cout << "ISBN: ";
+                getline(cin, search_term);
+                break;
+
+            case '3':
+                cout << "Title: ";
+                getline(cin, search_term);
+                break;
+                
+            case '4':
+                cout << "Author: ";
+                getline(cin, search_term);
+                break;
+                
+            case '5':
+                cout << "Subject: ";
+                getline(cin, search_term);
+                break;
+
+            default:
+                break;
+        }
+    
+    return resultsList;
+}
+
+
+
+Media menuMediaCheckOut(MediaHandler& theMediaHandler, UserHandler& theUserHandler)
 {
     
     
@@ -1071,6 +1230,7 @@ Media menuMediaCheckOut(MediaHandler theMediaHandler, UserHandler theUserHandler
     
     Media editedMedia = theMediaHandler.getMedia(mediaID);
     theMediaHandler.checkOutMedia(mediaID, userID);
+    theUserHandler.checkOutMedia(mediaID, userID);
     
     return editedMedia;
 }
@@ -1142,6 +1302,8 @@ int main()
         if (menu_select == 0)	// media menu
         {
             Media editedMedia;
+            vector <int> mediaReuslts;
+            
             switch (menu_command)
             {
                 case 'a':
@@ -1181,7 +1343,10 @@ int main()
                     break;
                 case 'c':
                     editedMedia = menuMediaCheckOut(theMediaHandler, theUserHandler);
-                    editedMedia.displayInformation();
+                    //editedMedia.displayInformation();
+                    break;
+                case 's':
+                    mediaReuslts = menuMediaSearch(theMediaHandler);
                     break;
                     
             }
