@@ -49,7 +49,7 @@ Checkin/checkout menu
 
 */
 
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
