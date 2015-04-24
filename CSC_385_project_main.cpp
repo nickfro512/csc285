@@ -9,22 +9,21 @@
  
  Known bugs:
  Entering text for copies when adding/editing media breaks program
+ Checkin/checkout is buggy in various ways
  
  STUFF THAT STILL NEEDS TO BE DONE:
  
  USER:
+ checkin/checkout stuff - Nick is working on this
  login
  logout
- checkin
- checkout
- get checked out list
  search
+ password encryption - Branden is working on this
+ 
  
  MEDIA:
- 
- Checkin
- Checkout
  Search
+ checkin/checkout stuff - Nick is working on this
  
  
  MENUS:
