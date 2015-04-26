@@ -9,25 +9,26 @@
  User and media add, delete, edit, list currently work. User and Media are read in from user_data.txt and
  media_data.txt now. Changes are saved on program exit by writing to those files. Basically that's going to be
  our standin for the actual database that's in the specs.
+
+ Checking stuff in and out now works, and is saved to user and media files. Due dates are set to 30 days from 
+ current date. MediaList->renew will add 7 days.
  
  
  Known bugs:
  Entering text for copies when adding/editing media breaks program
- Checkin/checkout is buggy in various ways
  
  STUFF THAT STILL NEEDS TO BE DONE:
  
  USER:
- checkin/checkout stuff - Nick is working on this
  login
  logout
  search
- password encryption - Branden is working on this
+ display info on one line - just show user ID and name. need a display that fits on one line for lists.
  
  
  MEDIA:
  Search
- checkin/checkout stuff - Nick is working on this
+ display info on one line - just show media ID and title. need a display that fits on one line for lists.
  
  
  MENUS:
@@ -37,18 +38,18 @@
  INPUT VALIDATION: We will want at least basic validation for new user/media info (i.e. valid emails, passwords etc)
  
  
- Login interface - prompt for username, password
+ Login interface - prompt for username, password - if it's good give user a new session id (User.login)
  
  Admin interface
- User menu
-	Search users by field X
- Media menu
-	Search media by field X
+	 User menu
+		Search users by field X
+	 Media menu
+		Search media by field X
  
  
  User interface
- Search menu
- Checkin/checkout menu
+	 Search menu
+	 Checkin/checkout menu
  
  
  */
@@ -63,8 +64,18 @@
 using namespace std;
 
 // filenames for user and media data
-const string userDataFile = "user_data.txt";
-const string mediaDataFile = "media_data.txt";
+const string USER_DATA_FILE = "user_data.txt";
+const string MEDIA_DATA_FILE = "media_data.txt";
+
+const bool ENABLE_IO = true;	// enable reading/writing user and media records
+
+// time periods coverted to seconds to use when altering due dates
+const long SECONDS_IN_A_DAY = (60 * 60 * 24);
+const long SECONDS_IN_A_WEEK = (SECONDS_IN_A_DAY * 7); 
+const long SECONDS_IN_THIRTY_DAYS = (SECONDS_IN_A_DAY * 30); 
+
+const long CHECKOUT_PERIOD_IN_SECONDS = SECONDS_IN_THIRTY_DAYS;		// sets how long a media item gets checked out for
+const long RENEWAL_PERIOD_IN_SECONDS = SECONDS_IN_A_WEEK;			// sets how long a media item can be renewed for by user after initial checkout
 
 // Library system users
 class User
@@ -129,7 +140,7 @@ public:
         }
         
         cout << "Username: " << username << endl;
-        cout << "Password: " << decryptPassword(password) << endl;
+        cout << "Password: " << password << endl;
         cout << "Name: " << firstName << " " << lastName << endl;
         cout << "Email: " << email << endl;
         cout << "Address: " << address << endl;
@@ -138,8 +149,21 @@ public:
         cout << "------------------" << endl;
     }
     
+    // when user first creates a password, password = passwordEncryptDecrypt(password), that will encrypt it
+    // the password will then be stored in an encrypted state, then call passwordEncryptDecrypt(password) to
+    // display the dcrypted password without changing the password within the 'database'
+    string passwordEncryptDecrypt(string passwordIn)
+    {
+        char key[3] = { 'K', 'C', 'Q' }; //Any chars will work
+        string passwordOut = passwordIn;
+        for (int i = 0; i < passwordIn.size(); i++)
+            passwordOut[i] = passwordIn[i] ^ key[i % (sizeof(key) / sizeof(char))];
+        return passwordOut;
+    }
+
+    
     void displayCheckedOutInformation()
-   	{
+    {
         if (checkedOutMediaIds.size() > 0)
         {
             cout << "Checked out media: " << endl;
@@ -159,22 +183,6 @@ public:
     int logout()
     {
         return 0;
-    }
-    
-    // password encryption would be nice to have:
-    
-    // encrypt user password
-    string encryptPassword(string password)
-    {
-        string encryptedPassword = password;
-        return encryptedPassword;
-    }
-    
-    // decrypt user password
-    string decryptPassword(string encryptedPassword)
-    {
-        string decryptedPassword = encryptedPassword;
-        return decryptedPassword;
     }
 };
 
@@ -249,11 +257,25 @@ public:
         return true;
     }
     
+	// check out a media item on a user record - add the media ID to the user's checked out media ID list
     bool checkIn(int mediaID, int userID)
     {
-        return false;
+        User theUser = getUser(userID);
+		for (unsigned int i = 0; i < theUser.checkedOutMediaIds.size(); i++)
+		{
+			if (theUser.checkedOutMediaIds[i] == mediaID)
+			{
+				theUser.checkedOutMediaIds.erase(theUser.checkedOutMediaIds.begin() + i);	// delete this media ID in the checked out list
+				edit(userID, theUser);	// update the user record
+				cout << "User Record Check in succeeded for User ID " << userID << " on mediaID " << mediaID << endl;
+				return true;
+			}
+		}
+		cout << "Renewal failed! Couldn't find media in checked out ID list" << endl;
+		return false;
     }
     
+	// check out a media item on a user record - add the media ID to the user's checked out media ID list
     bool checkOut(int mediaID, int userID)
     {
         User theUser = getUser(userID);
@@ -296,67 +318,74 @@ public:
         string firstLine;
         
         vector<User> newList;				// new list of users to read in to
-        User theUser;
         
         ifstream theFile(filename);			// attempt to open file
         
         if (theFile.is_open())
         {
             if (getline(theFile, line))
-			{
-				userIdCounter = atoi(line.c_str());	// convert string to int for user ID counter value (gets used to assign new user IDs)
-            
-				while(getline(theFile, firstLine))		// get the first line of the next user record if we're not at end of file
-				{
-					// read a User record in from the file
+            {
+                userIdCounter = atoi(line.c_str());	// convert string to int for user ID counter value (gets used to assign new user IDs)
                 
-					theUser.userID = atoi(firstLine.c_str());		// convert string to int for user ID value
-                
-					getline(theFile, line);
-					theUser.userType = line.at(0);					// get first character of string for userType value
-                
-					getline(theFile, line);
-					theUser.sessionID = atoi(line.c_str());		// convert string to int for session ID value
-                
-					getline(theFile, line);
-					theUser.username = line;
-                
-					getline(theFile, line);
-					theUser.password = line;
-                
-					getline(theFile, line);
-					theUser.firstName = line;
-                
-					getline(theFile, line);
-					theUser.lastName = line;
-                
-					getline(theFile, line);
-					theUser.email = line;
-                
-					getline(theFile, line);
-					theUser.address = line;
-                
-					getline(theFile, line);
-					theUser.phone = line;
-                
-				  /*
-					if(getline(theFile, line))
-					{
+                while(getline(theFile, firstLine))		// get the first line of the next user record if we're not at end of file
+                {
+                    // read a User record in from the file
+
+					User theUser;		// create a fresh user record for this record in the file
+                    
+                    theUser.userID = atoi(firstLine.c_str());		// convert string to int for user ID value
+                    
+                    getline(theFile, line);
+                    theUser.userType = line.at(0);					// get first character of string for userType value
+                    
+                    getline(theFile, line);
+                    theUser.sessionID = atoi(line.c_str());		// convert string to int for session ID value
+                    
+                    getline(theFile, line);
+                    theUser.username = line;
+                    
+                    getline(theFile, line);
+                    theUser.password = line;
+                    theUser.password = theUser.passwordEncryptDecrypt(theUser.password);
+                    
+                    getline(theFile, line);
+                    theUser.firstName = line;
+                    
+                    getline(theFile, line);
+                    theUser.lastName = line;
+                    
+                    getline(theFile, line);
+                    theUser.email = line;
+                    
+                    getline(theFile, line);
+                    theUser.address = line;
+                    
+                    getline(theFile, line);
+                    theUser.phone = line;
+                    
+                    if(getline(theFile, line))
+                    {
 						if (line.length() > 0)
 						{
 							while(line.at(0) != 'x' && line != "")
 							{
+								cout << "line is:  " << line;
 								theUser.checkedOutMediaIds.push_back(atoi(line.c_str()));
+								cout << " *** added: " << atoi(line.c_str()) << endl;
 								getline(theFile, line);
 							}
 						}
+						cout << "finished user checkout I/O for user ID " << theUser.userID << endl;
+                    }
+					else
+					{
+						cout << endl << "no line!";
 					}
-					*/
-                
-					newList.push_back(theUser);			// add this user to new user list
-                
-				}
-			}
+                    
+                    newList.push_back(theUser);			// add this user to new user list
+                    
+                }
+            }
             list = newList;					// replace current list with the new list
             
             cout << "Successfully read in " << list.size() << " users from file " << filename << endl;
@@ -393,20 +422,21 @@ public:
                 theFile << theUser.userType << endl;
                 theFile << theUser.sessionID << endl;
                 theFile << theUser.username << endl;
-                theFile << theUser.password << endl;
-                theFile << theUser.firstName<< endl;
+                theFile << theUser.passwordEncryptDecrypt(theUser.password) << endl;
+                //theFile << theUser.password << endl;
+				theFile << theUser.firstName << endl;
                 theFile << theUser.lastName<< endl;
                 theFile << theUser.email << endl;
                 theFile << theUser.address << endl;
                 theFile << theUser.phone << endl;
                 
-                /*
+                
                 for(unsigned int j = 0; j < theUser.checkedOutMediaIds.size(); j++)
                 {
-                    theFile << theUser.checkedOutMediaIds[j] << endl;
+					theFile << theUser.checkedOutMediaIds[j] << endl;
                 }
-				theFile << "x" << endl;
-                */                
+                theFile << "x" << endl;
+                 
                 cout << "Successfully wrote user at index " << i << " to " << filename << endl;
             }
             
@@ -434,16 +464,16 @@ public:
     {
     }
     
-    // read user records into the user list from userDataFile (text file specified at top of program)
+    // read user records into the user list from USER_DATA_FILE (text file specified at top of program)
     bool readUsers()
     {
-        return theUserList.readListFromFile(userDataFile);
+        return theUserList.readListFromFile(USER_DATA_FILE);
     }
     
-    // write current user records out to userDataFile (text file specified at the top of the program)
+    // write current user records out to USER_DATA_FILE (text file specified at the top of the program)
     bool writeUsers()
     {
-        return theUserList.writeListToFile(userDataFile);
+        return theUserList.writeListToFile(USER_DATA_FILE);
     }
     
     // get a user from the user list by their ID number
@@ -475,13 +505,12 @@ public:
     
     bool checkInMedia(int mediaID, int userID)
     {
-        return false;
+        return theUserList.checkIn(mediaID, userID);
     }
     
     bool checkOutMedia(int mediaID, int userID)
     {
-        theUserList.checkOut(mediaID, userID);
-        return true;
+        return theUserList.checkOut(mediaID, userID);
     }
     
     void listAllUsers()
@@ -559,17 +588,32 @@ public:
         cout << "------------------" << endl;
     }
     
+	// display information about who has checked out this media item and when it's due
     void displayCheckedOutInformation()
    	{
+		time_t rawTime;		// need these time objects to get the renewal dates and display them
+		tm *readableTime;
+
+		time_t currentTime = time(0);	// get current time to check if anything's overdue
+
         if (checkedOutUserIds.size() > 0)
         {
             cout << "Checked out by: " << endl;
             for (unsigned int i = 0; i < checkedOutUserIds.size(); i++)
             {
-                cout << "User " << checkedOutUserIds[i] << endl;
+				rawTime = dueDates[i];
+				readableTime = localtime(&rawTime);
+                cout << "User " << checkedOutUserIds[i] << "\t\t" << "Due: " << asctime(readableTime);
+				if (currentTime >= dueDates[i])
+				{
+					cout << " ! OVERDUE";
+				}
+				cout << endl;
             }
             cout << "---------------" << endl;
         }
+
+		//delete readableTime; ptrdel
     }
     
 };
@@ -665,19 +709,31 @@ public:
         return list.size();
     }
     
-    bool checkIn(int mediaID, int userID)
-    {
-        return false;
-    }
-    
+	// check out a media item for a user - stores user ID and a due date in the media record
     bool checkOut(int mediaID, int userID)
     {
+		UserHandler theUserHandler;			// user handler for checking if user has alraedy checked something out
+
         Media theMedia = getMedia(mediaID);
+
         if (theMedia.copies > 0)
         {
+			time_t dueDate = time(0) + SECONDS_IN_THIRTY_DAYS;		// set due date to 30 days after checkout
+			
+			// set due time to midnight on due date
+			tm *dueDateTm = localtime(&dueDate);
+			dueDateTm->tm_hour = 0;
+			dueDateTm->tm_min = 0;
+			dueDateTm->tm_sec = 0;
+			dueDate = mktime(dueDateTm);
+			//delete dueDateTm;	//ptrdel
+
             theMedia.checkedOutUserIds.push_back(userID);
-            theMedia.copies--;
-            edit(mediaID, theMedia);
+			theMedia.dueDates.push_back(dueDate);
+			theMedia.copies--;
+
+            edit(mediaID, theMedia);								// update the media record with new checkout ID and due date
+			
             cout << "\n\nCheck out succeeded, " << theMedia.copies << " copies left\n\n";
             return true;
         }
@@ -687,6 +743,44 @@ public:
             return false;
         }
     }
+
+	// check in a media item for a user - remove user id from checked out id list and their due date from due date list
+	bool checkIn(int mediaID, int userID)
+    {
+		Media theMedia = getMedia(mediaID);
+		for (unsigned int i = 0; i < theMedia.checkedOutUserIds.size(); i++)
+		{
+			if (theMedia.checkedOutUserIds[i] == userID)
+			{
+				theMedia.checkedOutUserIds.erase(theMedia.checkedOutUserIds.begin() + i);	// delete this user ID in the checked out list
+				theMedia.dueDates.erase(theMedia.dueDates.begin() + i);						// delete due date for this user ID in the due date list
+				theMedia.copies++;
+				edit(mediaID, theMedia);	// update the media record
+				cout << "Check in succeeded for User ID " << userID << " on mediaID " << mediaID << endl;
+				return true;
+			}
+		}
+		cout << "Checkin failed! Couldn't find user in checked out ID list" << endl;
+		return false;
+    }
+
+	// renew a media item (add another week to the due date)
+	bool renew(int mediaID, int userID)
+    {
+		Media theMedia = getMedia(mediaID);
+		for (unsigned int i = 0; i < theMedia.checkedOutUserIds.size(); i++)
+		{
+			if (theMedia.checkedOutUserIds[i] == userID)
+			{
+				theMedia.dueDates[i] += SECONDS_IN_A_WEEK;						// delete due date for this user ID in the due date list
+				edit(mediaID, theMedia);	// update the media record
+				cout << "Renewal succeeded" << endl;
+				return true;
+			}
+		}
+		cout << "Renewal failed! Couldn't find user in checked out ID list" << endl;
+		return false;
+    }
     
     bool readListFromFile(string filename)
     {
@@ -694,7 +788,7 @@ public:
         string firstLine;
         
         vector<Media> newList;				// new list of media to read in to
-        Media theMedia;
+        
         
         ifstream theFile(filename);			// attempt to open file
         
@@ -702,60 +796,94 @@ public:
         {
             if (getline(theFile, line))
             {
-				mediaIdCounter = atoi(line.c_str());	// convert string to int for media ID counter value
-            
-            while(getline(theFile, firstLine))		// get the first line of the next media record if we're not at end of file
-            {
-                // read a Media record in from the file
+                mediaIdCounter = atoi(line.c_str());	// convert string to int for media ID counter value
                 
-                theMedia.mediaID = atoi(firstLine.c_str());		// convert string to int for media ID value
-                
-                getline(theFile, line);
-                theMedia.mediaType = line.at(0);					// get first character of string for mediaType value
-                
-                getline(theFile, line);
-                theMedia.isbn = line;
-                
-                getline(theFile, line);
-                theMedia.title = line;
-                
-                getline(theFile, line);
-                theMedia.author = line;
-                
-                getline(theFile, line);
-                theMedia.subject = line;
-                
-                getline(theFile, line);
-                theMedia.copies = atoi(line.c_str());
-                
-                /*
-                if(getline(theFile, line))
+                while(getline(theFile, firstLine))		// get the first line of the next media record if we're not at end of file
                 {
-                    if (line.length() > 0)
-                    {
-                        while(line.at(0) != 'x' && line != "")
-                        {
-                            theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
-                            getline(theFile, line);
-                        }
-                    }
-                }*/
+                    // read a Media record in from the file
+					Media theMedia;		// create a fresh media record for this record in the file
 
-                
-                /*
-                if (line.at(0) != 'x')
-                {
+                    theMedia.mediaID = atoi(firstLine.c_str());		// convert string to int for media ID value
                     
-                    while(line.at(0) != 'x')
+                    getline(theFile, line);
+                    theMedia.mediaType = line.at(0);					// get first character of string for mediaType value
+                    
+                    getline(theFile, line);
+                    theMedia.isbn = line;
+                    
+                    getline(theFile, line);
+                    theMedia.title = line;
+                    
+                    getline(theFile, line);
+                    theMedia.author = line;
+                    
+                    getline(theFile, line);
+                    theMedia.subject = line;
+                    
+                    getline(theFile, line);
+                    theMedia.copies = atoi(line.c_str());
+                    
+                    
+                    if(getline(theFile, line))
                     {
-                        theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
-                        getline(theFile, line);
-                    }
-                    
-                }*/
+						if (line.length() > 0)
+						{
+							while(line.at(0) != 'x' && line != "")
+							{
+								//cout << "line is:  " << line;
+								theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
+								cout << " *** added: " << atoi(line.c_str()) << endl;
+								
+								time_t dueDate = time(0);
+								tm *dueDateTm = localtime(&dueDate);
+								
+								// read in due date
+		
+								getline(theFile, line);
+								dueDateTm->tm_year = atoi(line.c_str());
 
-                newList.push_back(theMedia);			// add this media to new media list
-			}
+								getline(theFile, line);
+								dueDateTm->tm_mon = atoi(line.c_str());
+
+								getline(theFile, line);
+								dueDateTm->tm_mday = atoi(line.c_str());
+
+								// set due time to midnight on due date
+								dueDateTm->tm_hour = 0;
+								dueDateTm->tm_min = 0;
+								dueDateTm->tm_sec = 0;
+								
+								dueDate = mktime(dueDateTm);
+								//delete dueDateTm;	//ptrdel
+
+								theMedia.dueDates.push_back(dueDate);
+								cout << "added due date: " << asctime(dueDateTm) << endl;
+
+								getline(theFile, line);
+								
+							}
+						}
+						cout << "finished media checkout I/O for media ID " << theMedia.mediaID << endl;
+                    }
+					else
+					{
+						cout << endl << "no line!";
+					}
+                    
+                    /*
+                     if (line.at(0) != 'x')
+                     {
+                     
+                     while(line.at(0) != 'x')
+                     {
+                     theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
+                     getline(theFile, line);
+                     }
+                     
+                     }*/
+                    
+                    newList.push_back(theMedia);			// add this media to new media list
+                }
             }
             
             list = newList;					// replace current list with the new list
@@ -784,7 +912,7 @@ public:
         {
             theFile << mediaIdCounter << endl;
             
-            // iterate through all medias and write them to file
+            // iterate through all media and write them to file
             for (int i = 0; i < list.size(); i++)
             {
                 theMedia = list[i];					// get media
@@ -798,14 +926,19 @@ public:
                 theFile << theMedia.subject << endl;
                 theFile << theMedia.copies << endl;
                 
-				/*
+                // write out checked out media information (checked out user ID and raw unix time due date for each record)
                 for(unsigned int j = 0; j < theMedia.checkedOutUserIds.size(); j++)
                 {
-                    theFile << theMedia.checkedOutUserIds[j] << endl;
-                }
-                theFile << "x" << endl;
-                */
+					theFile << theMedia.checkedOutUserIds[j] << endl;	// write user ID
 
+					tm *dueDate = localtime(&theMedia.dueDates[j]);
+					theFile << dueDate->tm_year << endl;				// write due date year
+					theFile << dueDate->tm_mon << endl;					// write due date month
+					theFile << dueDate->tm_mday << endl;				// write due date day
+					//delete dueDate; ptrdel
+                }
+                theFile << "x" << endl;		// write x to indicate end of data for this record
+                                
                 cout << "Successfully wrote media at index " << i << " to " << filename << endl;
             }
             
@@ -842,16 +975,16 @@ public:
     {
     }
     
-    // read media records into the media list from mediaDataFile (text file specified at top of program)
+    // read media records into the media list from MEDIA_DATA_FILE (text file specified at top of program)
     bool readMedia()
     {
-        return theMediaList.readListFromFile(mediaDataFile);
+        return theMediaList.readListFromFile(MEDIA_DATA_FILE);
     }
     
-    // write current media records out to mediaDataFile (text file specified at the top of the program)
+    // write current media records out to MEDIA_DATA_FILE (text file specified at the top of the program)
     bool writeMedia()
     {
-        return theMediaList.writeListToFile(mediaDataFile);
+        return theMediaList.writeListToFile(MEDIA_DATA_FILE);
     }
     
     
@@ -914,20 +1047,29 @@ char menu_select_get(int menu_type)
     switch (menu_type)
     {
         case 0:
-            cout << "MEDIA MENU: " << endl;
+            cout << "ADMIN MEDIA MENU: " << endl;
             cout << "(a) Add media item" << endl;
             cout << "(d) Delete media item" << endl;
             cout << "(e) Edit media item" << endl;
             cout << "(l) List media items" << endl;
             cout << "(c) Check out media item" << endl;
+			cout << "(i) Check in media item" << endl;
             break;
         case 1:
-            cout << "USER MENU: " << endl;
+            cout << "ADMIN USER MENU: " << endl;
             cout << "(a) Add user" << endl;
             cout << "(d) Delete user" << endl;
             cout << "(e) Edit user" << endl;
             cout << "(l) List users" << endl;
             break;
+		case 2:
+			cout << "PATRON MENU: " << endl;
+			cout << "(e) Edit profile" << endl;
+			cout << "(s) Search media" << endl;
+			cout << "(c) Check out media" << endl;
+			cout << "(c) Check in media" << endl;
+			cout << "(l) View checked out list" << endl;
+			break;
     }
     cout << "(t) Toggle Media/User menu" << endl;
     cout << "(x) exit" << endl;
@@ -1162,60 +1304,60 @@ Media menu_media_edit(Media theMedia)
 
 vector<int> menuMediaSearch(MediaHandler theMediaHandler)
 {
-	vector<int> resultsList;
+    vector<int> resultsList;
     char search_command = 'z';
-	string search_term ="";
-	char search_term_char = 'z';
-
-	
-		cout << "Select field to search by" << endl << endl;
-        
-        cout << "(1) Media Type " << endl;
-        cout << "(2) ISBN number: " << endl;
-        cout << "(3) Title: " << endl;
-        cout << "(4) Author: " << endl;
-        cout << "(5) Subject: " << endl;
-        
-        
-        cin >> search_command;
-        cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
-        
-        switch (search_command)
-        {
-            case '1':
-                cin >> search_term_char;
-                cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
-                break;
-                
-            case '2':
-                cout << "ISBN: ";
-                getline(cin, search_term);
-                break;
-
-            case '3':
-                cout << "Title: ";
-                getline(cin, search_term);
-                break;
-                
-            case '4':
-                cout << "Author: ";
-                getline(cin, search_term);
-                break;
-                
-            case '5':
-                cout << "Subject: ";
-                getline(cin, search_term);
-                break;
-
-            default:
-                break;
-        }
+    string search_term ="";
+    char search_term_char = 'z';
+    
+    
+    cout << "Select field to search by" << endl << endl;
+    
+    cout << "(1) Media Type " << endl;
+    cout << "(2) ISBN number: " << endl;
+    cout << "(3) Title: " << endl;
+    cout << "(4) Author: " << endl;
+    cout << "(5) Subject: " << endl;
+    
+    
+    cin >> search_command;
+    cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+    
+    switch (search_command)
+    {
+        case '1':
+            cin >> search_term_char;
+            cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+            break;
+            
+        case '2':
+            cout << "ISBN: ";
+            getline(cin, search_term);
+            break;
+            
+        case '3':
+            cout << "Title: ";
+            getline(cin, search_term);
+            break;
+            
+        case '4':
+            cout << "Author: ";
+            getline(cin, search_term);
+            break;
+            
+        case '5':
+            cout << "Subject: ";
+            getline(cin, search_term);
+            break;
+            
+        default:
+            break;
+    }
     
     return resultsList;
 }
 
 
-
+// menu to handle checking a media item out
 Media menuMediaCheckOut(MediaHandler& theMediaHandler, UserHandler& theUserHandler)
 {
     
@@ -1238,6 +1380,26 @@ Media menuMediaCheckOut(MediaHandler& theMediaHandler, UserHandler& theUserHandl
     return editedMedia;
 }
 
+// menu to handle checking a media item in
+Media menuMediaCheckIn(MediaHandler& theMediaHandler, UserHandler& theUserHandler)
+{
+    int userID;
+    int mediaID;
+    
+    theMediaHandler.listAllMedia();
+    cout << "Media ID to check in: ";
+    cin >> mediaID;
+    cout << "User ID checking this in: ";
+    cin >> userID;
+    cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+    
+    Media editedMedia = theMediaHandler.getMedia(mediaID);
+    theMediaHandler.checkInMedia(mediaID, userID);
+    theUserHandler.checkInMedia(mediaID, userID);
+    
+    return editedMedia;
+}
+
 
 int main()
 {
@@ -1249,7 +1411,32 @@ int main()
     
     Media theMedia;
     MediaHandler theMediaHandler;
-    
+ 
+	/*
+	time_t rawtime;
+	time (&rawtime);
+	rawtime += SECONDS_IN_THIRTY_DAYS;
+	cout << rawtime << endl;
+	struct tm *timeinfo;
+	int year = 2005;
+	int month = 10;
+	int day = 20;
+	timeinfo = localtime(&rawtime);
+	cout << asctime (timeinfo) << endl;
+	cout << timeinfo->tm_year << endl;
+	cout << timeinfo->tm_mon << endl;
+	cout << timeinfo->tm_mday << endl;
+	timeinfo->tm_year = year - 1900;
+	timeinfo->tm_mon = month - 1;
+	timeinfo->tm_mday = day;
+	time_t newTime = mktime(timeinfo);
+	cout << newTime << endl;
+	struct tm *new_timeinfo = localtime(&newTime);
+	cout << asctime (new_timeinfo) << endl;
+	//delete timeinfo;	ptrdel
+	//delete new_timeinfo;	ptrdel
+	*/
+
     User testUser;				// initialize with a user for testing
     testUser.userType = 'a';
     testUser.sessionID = 55324;
@@ -1262,13 +1449,7 @@ int main()
     testUser.phone = "860 214 9523";
     
     //theUserHandler.addUser(testUser);			// add first user
-    //theUserHandler.writeUsers();
-    //	return 0;
-    
-    
-    theUserHandler.readUsers();
-    
-    
+
     Media testMedia;			// initialize with a media for testing
     testMedia.mediaType = 'b';
     testMedia.isbn = "0553386794";
@@ -1278,9 +1459,12 @@ int main()
     testMedia.copies = 5;
     
     //theMediaHandler.addMedia(testMedia);	// add first media
-    
-    theMediaHandler.readMedia();
-    
+   
+	if (ENABLE_IO) 
+	{
+		theUserHandler.readUsers();		// read users from data file into program memory
+		theMediaHandler.readMedia();	// read media from data file into program memory
+	}
     
     
     //theUser = theUserHandler.getUser(0);	// get the new user record
@@ -1317,6 +1501,7 @@ int main()
                     break;
                 case 'e':
                     int editID;
+					theMediaHandler.listAllMedia();
                     cout << endl << "Media ID to edit: ";
                     do
                     {
@@ -1348,6 +1533,9 @@ int main()
                     editedMedia = menuMediaCheckOut(theMediaHandler, theUserHandler);
                     //editedMedia.displayInformation();
                     break;
+				case 'i':
+					editedMedia = menuMediaCheckIn(theMediaHandler, theUserHandler);
+					break;
                 case 's':
                     mediaReuslts = menuMediaSearch(theMediaHandler);
                     break;
@@ -1368,6 +1556,7 @@ int main()
                     break;
                 case 'e':
                     int editID;
+					theUserHandler.listAllUsers();
                     cout << endl << "User ID to edit: ";
                     do
                     {
@@ -1401,8 +1590,11 @@ int main()
         
     }
     
-    theUserHandler.writeUsers();
-    theMediaHandler.writeMedia();
-    
+	if (ENABLE_IO)
+	{
+		theUserHandler.writeUsers();	// write users in program memory to data file	
+		theMediaHandler.writeMedia();	// write media in program memory to media file
+	}
+
     return 0;
 }
