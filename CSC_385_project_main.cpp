@@ -12,7 +12,6 @@
  
  Known bugs:
  Entering text for copies when adding/editing media breaks program
- Encryption seems to be going the wrong way (writes plaintext, reads encrypted)
  
  STUFF THAT STILL NEEDS TO BE DONE:
  
@@ -20,7 +19,6 @@
  login
  logout
  search
- password encryption - Braden: Haven't Tested 100%, but test cases and adding a new user worked as intended
  display info on one line - just show user ID and name. need a display that fits on one line for lists.
  
  
@@ -138,7 +136,7 @@ public:
         }
         
         cout << "Username: " << username << endl;
-        cout << "Password: " << passwordEncryptDecrypt(password) << endl;
+        cout << "Password: " << password << endl;
         cout << "Name: " << firstName << " " << lastName << endl;
         cout << "Email: " << email << endl;
         cout << "Address: " << address << endl;
@@ -420,8 +418,9 @@ public:
                 theFile << theUser.userType << endl;
                 theFile << theUser.sessionID << endl;
                 theFile << theUser.username << endl;
-                theFile << theUser.password << endl;
-                theFile << theUser.firstName<< endl;
+                theFile << theUser.passwordEncryptDecrypt(theUser.password) << endl;
+                //theFile << theUser.password << endl;
+				theFile << theUser.firstName << endl;
                 theFile << theUser.lastName<< endl;
                 theFile << theUser.email << endl;
                 theFile << theUser.address << endl;
@@ -1044,20 +1043,29 @@ char menu_select_get(int menu_type)
     switch (menu_type)
     {
         case 0:
-            cout << "MEDIA MENU: " << endl;
+            cout << "ADMIN MEDIA MENU: " << endl;
             cout << "(a) Add media item" << endl;
             cout << "(d) Delete media item" << endl;
             cout << "(e) Edit media item" << endl;
             cout << "(l) List media items" << endl;
             cout << "(c) Check out media item" << endl;
+			cout << "(i) Check in media item" << endl;
             break;
         case 1:
-            cout << "USER MENU: " << endl;
+            cout << "ADMIN USER MENU: " << endl;
             cout << "(a) Add user" << endl;
             cout << "(d) Delete user" << endl;
             cout << "(e) Edit user" << endl;
             cout << "(l) List users" << endl;
             break;
+		case 2:
+			cout << "PATRON MENU: " << endl;
+			cout << "(e) Edit profile" << endl;
+			cout << "(s) Search media" << endl;
+			cout << "(c) Check out media" << endl;
+			cout << "(c) Check in media" << endl;
+			cout << "(l) View checked out list" << endl;
+			break;
     }
     cout << "(t) Toggle Media/User menu" << endl;
     cout << "(x) exit" << endl;
@@ -1082,7 +1090,6 @@ User menu_user_add()
     
     cout << "Password: ";
     getline(cin, editedUser.password);
-    editedUser.password = editedUser.passwordEncryptDecrypt(editedUser.password);
     
     cout << "First Name: ";
     getline(cin, editedUser.firstName);
@@ -1401,45 +1408,36 @@ int main()
     Media theMedia;
     MediaHandler theMediaHandler;
  
+	/*
 	time_t rawtime;
 	time (&rawtime);
 	rawtime += SECONDS_IN_THIRTY_DAYS;
-
 	cout << rawtime << endl;
-
 	struct tm *timeinfo;
-	
 	int year = 2005;
 	int month = 10;
 	int day = 20;
-
 	timeinfo = localtime(&rawtime);
 	cout << asctime (timeinfo) << endl;
 	cout << timeinfo->tm_year << endl;
 	cout << timeinfo->tm_mon << endl;
 	cout << timeinfo->tm_mday << endl;
-
 	timeinfo->tm_year = year - 1900;
 	timeinfo->tm_mon = month - 1;
 	timeinfo->tm_mday = day;
-	
-
-
 	time_t newTime = mktime(timeinfo);
 	cout << newTime << endl;
-
 	struct tm *new_timeinfo = localtime(&newTime);
-
 	cout << asctime (new_timeinfo) << endl;
-
 	//delete timeinfo;	ptrdel
 	//delete new_timeinfo;	ptrdel
+	*/
 
     User testUser;				// initialize with a user for testing
     testUser.userType = 'a';
     testUser.sessionID = 55324;
     testUser.username = "nfrogley";
-    testUser.password = testUser.passwordEncryptDecrypt("password");
+    testUser.password = "password";
     testUser.firstName = "Nick";
     testUser.lastName = "Frogley";
     testUser.email = "nickfro@gmail.com";
@@ -1448,12 +1446,6 @@ int main()
     
     //theUserHandler.addUser(testUser);			// add first user
 
-    if (ENABLE_IO) 
-	{
-		// read users from data file into program memory
-		theUserHandler.readUsers();
-	}
-    
     Media testMedia;			// initialize with a media for testing
     testMedia.mediaType = 'b';
     testMedia.isbn = "0553386794";
@@ -1466,8 +1458,8 @@ int main()
    
 	if (ENABLE_IO) 
 	{
-		// read memory from data file into program memory
-		theMediaHandler.readMedia();
+		theUserHandler.readUsers();		// read users from data file into program memory
+		theMediaHandler.readMedia();	// read media from data file into program memory
 	}
     
     
