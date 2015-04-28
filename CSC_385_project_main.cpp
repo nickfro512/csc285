@@ -50,12 +50,13 @@ Checkin/checkout menu
 
 */
 
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
 #include <ctime>
+#include <cctype>
 
 using namespace std;
 
@@ -1094,24 +1095,27 @@ bool checkEmail(string _input) // accepts any email using xxx@yyy.zzz format
 	return !(DotOffset >= ((int)_input.length() - 1)); //Check there is some other letters after the Dot
 }
 
-bool checkPhone(string _input) // accepts anything in XXX XXX-XXX format only way to do an alpha 
-//check is to split the string into threes, which can be done but not tonight, let me know
+bool is_valid_char(char c, std::string::size_type pos)
 {
-	int space = -1;
-	int hyphen = -1;
-	if (_input.length() != 11)
-		return 0;
-	for (unsigned int i = 0; i < _input.length(); i++)
-	{
-		if (_input[i] == ' ')
-			space = (int)i;
-		else if (_input[i] == '-')
-			hyphen = int(i);
-	}
-	if (space != 4 || hyphen != 8)
-		return 0;
-	else
-		return 1;
+	const char dash = '-';
+
+	if (pos == 3 || pos == 7) // positions where dash is expected
+		return c == dash;
+
+	else // positions where a digit is expected
+		return std::isdigit(c);
+}
+
+bool checkPhone(const std::string& candidate)
+{
+	const std::string::size_type EXPECTED_SIZE = 3 + 1 + 3 + 1 + 4;
+
+	if (candidate.size() != EXPECTED_SIZE) return false;
+
+	for (std::size_t i = 0; i < EXPECTED_SIZE; ++i) // for each position in the string
+		if (!is_valid_char(candidate[i], i)) return false;
+
+	return true;
 }
 
 // allow admin to input a new user record field by field
@@ -1141,7 +1145,7 @@ User menu_user_add()
 
 	while (!checkEmail(editedUser.email))
 	{
-		cout << "Incorrect format, please use xxx@yyy.zzz";
+		cout << "Incorrect format, please use xxx@yyy.zzz\n";
 		cout << "Email: ";
 		getline(cin, editedUser.email);
 	}
@@ -1154,7 +1158,7 @@ User menu_user_add()
 
 	while (!checkPhone(editedUser.phone))
 	{
-		cout << "Incorrect format, please use XXX XXX-XXX";
+		cout << "Incorrect format, please use XXX XXX-XXX\n";
 		cout << "Phone: ";
 		getline(cin, editedUser.phone);
 	}
@@ -1228,7 +1232,7 @@ User menu_user_edit(User theUser)
 
 			while (!checkEmail(editedUser.email))
 			{
-				cout << "Incorrect format, please use xxx@yyy.zzz";
+				cout << "Incorrect format, please use xxx@yyy.zzz\n";
 				cout << "Email: ";
 				getline(cin, editedUser.email);
 			}
@@ -1245,7 +1249,7 @@ User menu_user_edit(User theUser)
 
 			while (!checkPhone(editedUser.phone))
 			{
-				cout << "Incorrect format, please use XXX XXX-XXX";
+				cout << "Incorrect format, please use XXX XXX-XXX\n";
 				cout << "Phone: ";
 				getline(cin, editedUser.phone);
 			}
