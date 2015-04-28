@@ -216,6 +216,22 @@ public:
         return theUser;		// no user found with matching ID
     }
     
+    // get user by ID
+    User getUserByUsername(string username)
+    {
+        User theUser;
+        for (unsigned int i = 0; i < list.size(); i++)
+        {
+            theUser = list[i];
+            if (theUser.username == username)
+            {
+                return theUser;
+            }
+        }
+        return theUser;		// no user found with matching username
+    }
+
+    
     // get index of user in current list by user ID
     int getUserIndex(int id)
     {
@@ -298,17 +314,17 @@ public:
     }
     
     // get a list of all the user IDs currently in the user list
-    vector<int> getAllUserIDs()
+    vector<int> getAllIds()
     {
-        vector<int> userIDs;
+        vector<int> userIds;
         User theUser;
         
         for (int i = 0; i < list.size(); i++)
         {
             theUser = list[i];
-            userIDs.push_back(theUser.userID);
+            userIds.push_back(theUser.userID);
         }
-        return userIDs;
+        return userIds;
     }
     
     vector<int> searchOneField(string term, char field)
@@ -587,6 +603,12 @@ public:
         return theUser;
     }
     
+    // get all the user IDs in the system
+    vector<int> getAllUserIds()
+    {
+        return theUserList.getAllIds();
+    }
+    
     // add a new user to the user list
     int addUser(User theUser)
     {
@@ -628,6 +650,36 @@ public:
     {
         theUserList.listAll();
     }
+    
+    // try and log a user in - return 0 if it fails, otherwise return new session ID
+    int logUserIn(string username, string password)
+    {
+        User theUser = theUserList.getUserByUsername(username);
+        if (theUser.userID != -1)       // check that we got an existing user
+        {
+            if(theUser.password == password)
+            {
+                theUser.sessionID = theUser.userID + 10000;         // asssigning session ID based on userID since this isn't really used in this implementation
+                theUserList.edit(theUser.userID, theUser);           // set session ID in user record
+                return theUser.userID + 10000;
+            }
+        }
+        return 0;
+    }
+    
+    // log a user out
+    bool logUserOut(int id)
+    {
+        User theUser = theUserList.getUser(id);
+        if (theUser.userID != -1)       // check that we got an existing user
+        {
+            theUser.sessionID = 0;
+            theUserList.edit(theUser.userID, theUser);           // set session ID in user record
+            return true;
+        }
+        return false;
+    }
+    
 };
 
 
@@ -802,7 +854,7 @@ public:
     
     
     // return a list with the ID numbers of all the media items currently in the system
-    vector<int> getAllMediaIds()
+    vector<int> getAllIds()
     {
         vector<int> MediaIds;
         Media theMedia;
@@ -1191,7 +1243,7 @@ public:
     // get a list of all media IDs currently in the system
     vector<int> getAllMediaIds()
     {
-        return theMediaList.getAllMediaIds();
+        return theMediaList.getAllIds();
     }
     
     
@@ -1253,6 +1305,61 @@ public:
     
     InterfaceHandler()  // constructor
     {
+    }
+    
+    void displayUserInformation(UserHandler theUserHandler, MediaHandler theMediaHandler)
+    {
+        vector <int> userIdList = theUserHandler.getAllUserIds();
+        vector <int> mediaIdList = theMediaHandler.getAllMediaIds();
+        
+        for(unsigned int i = 0; i < userIdList.size(); i++)
+        {
+            User theUser = theUserHandler.getUser(userIdList[i]);
+            cout << "ID: " << theUser.userID << endl;
+            cout << "Type: ";
+            if (theUser.userType == 'a')
+            {
+                cout << "Administrator" << endl;
+            }
+            else
+            {
+                cout << "Patron" << endl;
+            }
+            
+            cout << "Username: " << theUser.username << endl;
+            cout << "Password: " << theUser.password << endl;
+            cout << "Name: " << theUser.firstName << " " << theUser.lastName << endl;
+            cout << "Email: " << theUser.email << endl;
+            cout << "Address: " << theUser.address << endl;
+            cout << "Phone number: " << theUser.phone << endl;
+            
+            cout << "------------------" << endl;
+       
+            if (theUser.checkedOutMediaIds.size() > 0)
+            {
+                cout << "Checked out media: " << endl;
+                for (unsigned int j = 0; j < theUser.checkedOutMediaIds.size(); j++)
+                {
+                    Media theMedia = theMediaHandler.getMedia(theUser.checkedOutMediaIds[j]);
+                    cout << "ID " << theUser.checkedOutMediaIds[j];
+                    
+                    theMedia = theMediaHandler.getMedia(theUser.checkedOutMediaIds[j]);
+                    cout << "\t" << theMedia.title;
+                    
+                    for (unsigned int k = 0; k < theMedia.checkedOutUserIds.size(); k++)
+                    {
+                        if (theMedia.checkedOutUserIds[k] == theUser.userID)
+                        {
+                            time_t rawTime = theMedia.dueDates[k];
+                            tm *readableTime = localtime(&rawTime);
+                            cout << "\t\tDue: " << asctime(readableTime);
+                            //delete readableTime;
+                        }
+                    }
+                }
+                cout << "---------------" << endl;
+            }
+        }
     }
     
     // print the menu and get a command from user
@@ -1817,6 +1924,9 @@ int main()
     //theUser = theUserHandler.getUser(0);	// get the new user record
     // theUser.displayInformation();		// print record
     
+    //theUserHandler.logUserIn(
+    
+    
     while (menu_command != 'x')
     {
         menu_command = theInterface.menu_select_get(menu_select);
@@ -1936,7 +2046,7 @@ int main()
                     break;
                 case 'l':
                     cout << "---------------------------------- USER LIST" << endl;
-                    theUserHandler.listAllUsers();
+                    theInterface.displayUserInformation(theUserHandler, theMediaHandler);
                     break;
                 case 's':
                     userResults = theInterface.menuUserSearch(theUserHandler);
