@@ -64,7 +64,7 @@ using namespace std;
 const string USER_DATA_FILE = "user_data.txt";
 const string MEDIA_DATA_FILE = "media_data.txt";
 
-const bool ENABLE_IO = true;	// enable reading/writing user and media records
+const bool ENABLE_IO = false;	// enable reading/writing user and media records
 
 // time periods coverted to seconds to use when altering due dates
 const long SECONDS_IN_A_DAY = (60 * 60 * 24);
@@ -600,8 +600,8 @@ public:
 			for (unsigned int i = 0; i < checkedOutUserIds.size(); i++)
 			{
 				rawTime = dueDates[i];
-				readableTime = localtime(&rawTime);
-				cout << "User " << checkedOutUserIds[i] << "\t\t" << "Due: " << asctime(readableTime);
+				localtime_s(readableTime, &rawTime);
+				cout << "User " << checkedOutUserIds[i] << "\t\t"; //<< "Due: " << asctime(readableTime);
 				if (currentTime >= dueDates[i])
 				{
 					cout << " ! OVERDUE";
@@ -719,7 +719,8 @@ public:
 			time_t dueDate = time(0) + SECONDS_IN_THIRTY_DAYS;		// set due date to 30 days after checkout
 
 			// set due time to midnight on due date
-			tm *dueDateTm = localtime(&dueDate);
+			tm *dueDateTm;
+			localtime_s(dueDateTm, &dueDate);
 			dueDateTm->tm_hour = 0;
 			dueDateTm->tm_min = 0;
 			dueDateTm->tm_sec = 0;
@@ -833,7 +834,8 @@ public:
 								cout << " *** added: " << atoi(line.c_str()) << endl;
 
 								time_t dueDate = time(0);
-								tm *dueDateTm = localtime(&dueDate);
+								tm *dueDateTm;
+								localtime_s(dueDateTm,&dueDate);
 
 								// read in due date
 
@@ -855,7 +857,7 @@ public:
 								//delete dueDateTm;	//ptrdel
 
 								theMedia.dueDates.push_back(dueDate);
-								cout << "added due date: " << asctime(dueDateTm) << endl;
+								//cout << "added due date: " << asctime(dueDateTm) << endl;
 
 								getline(theFile, line);
 
@@ -929,7 +931,8 @@ public:
 				{
 					theFile << theMedia.checkedOutUserIds[j] << endl;	// write user ID
 
-					tm *dueDate = localtime(&theMedia.dueDates[j]);
+					tm *dueDate;
+					localtime_s(dueDate, &theMedia.dueDates[j]);
 					theFile << dueDate->tm_year << endl;				// write due date year
 					theFile << dueDate->tm_mon << endl;					// write due date month
 					theFile << dueDate->tm_mday << endl;				// write due date day
