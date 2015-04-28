@@ -1158,7 +1158,7 @@ User menu_user_add()
 
 	while (!checkPhone(editedUser.phone))
 	{
-		cout << "Incorrect format, please use XXX XXX-XXX\n";
+		cout << "Incorrect format, please use XXX-XXX-XXX\n";
 		cout << "Phone: ";
 		getline(cin, editedUser.phone);
 	}
@@ -1249,7 +1249,7 @@ User menu_user_edit(User theUser)
 
 			while (!checkPhone(editedUser.phone))
 			{
-				cout << "Incorrect format, please use XXX XXX-XXX\n";
+				cout << "Incorrect format, please use XXX-XXX-XXX\n";
 				cout << "Phone: ";
 				getline(cin, editedUser.phone);
 			}
