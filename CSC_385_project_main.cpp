@@ -1620,7 +1620,7 @@ public:
         return command;
     }
     
-    char menuTopSelect()
+    char menuLoginSelect()
     {
         char select = 'z';
         while (select != 'l' && select != 'c' && select != 'r')
@@ -1635,7 +1635,7 @@ public:
     
     // allow admin to input a new user record field by field
     // NOTE: will want to validate these inputs eventually
-    User menu_user_add()
+    User menuUserAdd()
     {
         User editedUser;
         
@@ -1668,7 +1668,7 @@ public:
     }
     
     // Menu to allow admin to edit user records
-    User menu_user_edit(User theUser)
+    User menuUserEdit(User theUser)
     {
         char edit_command = 'z';
         User editedUser = theUser;
@@ -1696,7 +1696,7 @@ public:
             switch (edit_command)
             {
                 case 'a':
-                    editedUser = menu_user_add();		// use user add menu to get all new information for this user ID
+                    editedUser = menuUserAdd();		// use user add menu to get all new information for this user ID
                     // get userID, session ID etc from original user record
                     editedUser.userID = theUser.userID;
                     editedUser.sessionID = theUser.sessionID;
@@ -1760,7 +1760,7 @@ public:
     
     // allow admin to input a new media record field by field
     // NOTE: will want to validate these inputs eventually
-    Media menu_media_add()
+    Media menuMediaAdd()
     {
         Media newMedia;
         
@@ -1786,7 +1786,7 @@ public:
         return newMedia;
     }
     
-    Media menu_media_edit(Media theMedia)
+    Media menuMediaEdit(Media theMedia)
     {
         char edit_command = 'z';
         Media editedMedia = theMedia;
@@ -1812,7 +1812,7 @@ public:
             switch (edit_command)
             {
                 case 'a':
-                    editedMedia = menu_media_add();		// use the media add menu to get all new info for this media ID
+                    editedMedia = menuMediaAdd();		// use the media add menu to get all new info for this media ID
                     // get media ID etc from original media record
                     editedMedia.mediaID = theMedia.mediaID;
                     break;
@@ -2143,30 +2143,7 @@ int main()
     
     
     
-    /*
-     time_t rawtime;
-     time (&rawtime);
-     rawtime += SECONDS_IN_THIRTY_DAYS;
-     cout << rawtime << endl;
-     struct tm *timeinfo;
-     int year = 2005;
-     int month = 10;
-     int day = 20;
-     timeinfo = localtime(&rawtime);
-     cout << asctime (timeinfo) << endl;
-     cout << timeinfo->tm_year << endl;
-     cout << timeinfo->tm_mon << endl;
-     cout << timeinfo->tm_mday << endl;
-     timeinfo->tm_year = year - 1900;
-     timeinfo->tm_mon = month - 1;
-     timeinfo->tm_mday = day;
-     time_t newTime = mktime(timeinfo);
-     cout << newTime << endl;
-     struct tm *new_timeinfo = localtime(&newTime);
-     cout << asctime (new_timeinfo) << endl;
-     //delete timeinfo;	ptrdel
-     //delete new_timeinfo;	ptrdel
-     */
+    
     
     User testUser;				// initialize with a user for testing
     testUser.userType = 'a';
@@ -2199,17 +2176,16 @@ int main()
     
     //theUserHandler.logUserIn(
     
-    while (top_menu_command != 'x')
+    while (top_menu_command != 'x')     // top level (login) menu
     {
-        top_menu_command = theInterface.menuTopSelect();		// top level menu command
+        top_menu_command = theInterface.menuLoginSelect();		// top level menu command
+        if (top_menu_command == 'x') { cout << "we got here"; exit;}
         menu_command = 'z';
         
         string tempUsername;	// username to be entered by user
         string tempPassword;	// password to be entered by user
         
-        cout << "made it here";
-        
-        switch(top_menu_command)
+        switch(top_menu_command)    // login menu
         {
             case 'l':
                 cout << "Username: ";
@@ -2234,7 +2210,7 @@ int main()
                 
             case 'c':
                 int newUserID;
-                theUser = theInterface.menu_user_add();
+                theUser = theInterface.menuUserAdd();
                 newUserID = theUserHandler.addUser(theUser);
                 cout << "Successfully added user ID " << newUserID << endl;
                 menu_select = 2;
@@ -2244,7 +2220,7 @@ int main()
                 string username;
                 cout << "Enter username: ";
                 break;
-        }
+        }       // end login menu switch
         
         while (menu_command != 'x')
         {
@@ -2257,10 +2233,6 @@ int main()
                     menu_select = 1;
                 }
                 else if (menu_select == 1)
-                {
-                    menu_select = 2;
-                }
-                else if (menu_select == 2)
                 {
                     menu_select = 0;
                 }
@@ -2278,7 +2250,7 @@ int main()
                 switch (menu_command)
                 {
                     case 'a':
-                        theMedia = theInterface.menu_media_add();
+                        theMedia = theInterface.menuMediaAdd();
                         newMediaID = theMediaHandler.addMedia(theMedia);
                         cout << endl << "Successfully added Media ID " << newMediaID << endl << endl;
                         break;
@@ -2297,7 +2269,7 @@ int main()
                         }
                         while(theMedia.mediaID == -1);
                         
-                        editedMedia = theInterface.menu_media_edit(theMedia);
+                        editedMedia = theInterface.menuMediaEdit(theMedia);
                         theMediaHandler.editMedia(editID, editedMedia);
                         cout << endl << "Successfully edited Media ID " << editID << endl << endl;
                         break;
@@ -2309,8 +2281,9 @@ int main()
                         cout << endl << "Successfully deleted Media ID " << deleteID << endl << endl;
                         break;
                     case 'l':
-                        cout << "---------------------------------- MEDIA LIST" << endl;
+                        cout << "------------- MEDIA LIST -------------" << endl;
                         theInterface.listAllMedia(theUserHandler, theMediaHandler);
+                        cout << "--------------------------------------";
                         break;
                         
                     case 'c':
@@ -2334,7 +2307,7 @@ int main()
                         break;
                         
                 }
-            }
+            }           // end media menu
             
             else if (menu_select == 1)	// user menu
             {
@@ -2348,7 +2321,7 @@ int main()
                 switch (menu_command)
                 {
                     case 'a':
-                        theUser = theInterface.menu_user_add();
+                        theUser = theInterface.menuUserAdd();
                         newUserID = theUserHandler.addUser(theUser);
                         cout << "Successfully added user ID " << newUserID << endl;
                         break;
@@ -2366,7 +2339,7 @@ int main()
                         }
                         while(theUser.userID == -1);
                         
-                        editedUser = theInterface.menu_user_edit(theUser);
+                        editedUser = theInterface.menuUserEdit(theUser);
                         theUserHandler.editUser(editID, editedUser);
                         cout << endl << "Successfully edited user ID " << editID << endl;
                         break;
@@ -2377,8 +2350,9 @@ int main()
                         cout << endl << "Successfully deleted user ID " << deleteID << endl;
                         break;
                     case 'l':
-                        cout << "---------------------------------- USER LIST" << endl;
+                        cout << "------------- USER LIST -------------" << endl;
                         theInterface.listAllUsers(theUserHandler, theMediaHandler);
+                        cout << "-------------------------------------" << endl;
                         break;
                     case 's':
                         userResults = theInterface.menuUserSearch(theUserHandler);
@@ -2388,7 +2362,7 @@ int main()
                         cin >> viewID;
                         theInterface.displayUserProfile(viewID, theUserHandler, theMediaHandler);
                         theInterface.displayUserCheckedOutItems(viewID, theUserHandler, theMediaHandler);
-                        break;       
+                        break;
                 }
             }
             
@@ -2415,7 +2389,6 @@ int main()
                         theInterface.displayUserCheckedOutItems(loggedInUser.userID, theUserHandler, theMediaHandler);
                         break;
                     default:	// in case menu_command is incorrect
-                        cout << "Incorrect input - Try again...\n";
                         break;
                 }
             }
@@ -2426,7 +2399,7 @@ int main()
     
     if (ENABLE_IO)
     {
-        theUserHandler.writeUsers();	// write users in program memory to data file	
+        theUserHandler.writeUsers();	// write users in program memory to data file
         theMediaHandler.writeMedia();	// write media in program memory to media file
     }
     
