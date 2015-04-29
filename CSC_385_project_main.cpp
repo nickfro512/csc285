@@ -50,7 +50,7 @@
  
  */
 
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -1307,14 +1307,107 @@ public:
     {
     }
     
-    void displayUserInformation(UserHandler theUserHandler, MediaHandler theMediaHandler)
+	
+	void displayUserProfile(int userId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		User theUser = theUserHandler.getUser(userId);
+        cout << "ID: " << theUser.userID << endl;
+        cout << "Type: ";
+        if (theUser.userType == 'a')
+        {
+			cout << "Administrator" << endl;
+		}
+		else
+		{
+			cout << "Patron" << endl;
+		}
+            
+		cout << "Username: " << theUser.username << endl;
+		cout << "Password: " << theUser.password << endl;
+		cout << "Name: " << theUser.firstName << " " << theUser.lastName << endl;
+		cout << "Email: " << theUser.email << endl;
+		cout << "Address: " << theUser.address << endl;
+		cout << "Phone number: " << theUser.phone << endl;
+            
+		cout << "------------------" << endl;
+	}
+
+	void displayUserCheckedOutItems(int userId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		User theUser = theUserHandler.getUser(userId);
+		time_t currentTime = time(0);
+		Media theMedia;
+
+		if (theUser.checkedOutMediaIds.size() > 0)
+		{
+			cout << "Checked out media: " << endl;
+			for (unsigned int j = 0; j < theUser.checkedOutMediaIds.size(); j++)
+			{
+				theMedia = theMediaHandler.getMedia(theUser.checkedOutMediaIds[j]);
+				cout << "ID " << theUser.checkedOutMediaIds[j];
+                    
+				theMedia = theMediaHandler.getMedia(theUser.checkedOutMediaIds[j]);
+				cout << "\t" << theMedia.title;
+                    
+				for (unsigned int k = 0; k < theMedia.checkedOutUserIds.size(); k++)
+				{
+					if (theMedia.checkedOutUserIds[k] == theUser.userID)
+					{
+						time_t rawTime = theMedia.dueDates[k];
+						tm *readableTime = localtime(&rawTime);
+						cout << "\t\tDue: " << asctime(readableTime);
+						if (currentTime >= theMedia.dueDates[k])
+						{
+							cout << " ! OVERDUE";
+						}
+						cout << endl;
+						//delete readableTime;
+					}
+				}
+			}
+			cout << "---------------" << endl;
+		}
+	}
+
+	// displays user ID, type, username and name, number of items checked out on one line
+	void displayUserShort(int userId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		User theUser = theUserHandler.getUser(userId);
+        cout << "ID " << theUser.userID;
+        cout << "\t";
+        if (theUser.userType == 'a')
+        {
+			cout << "Admin";
+		}
+		else
+		{
+			cout << "Patron";
+		}
+        
+		cout << "\t" << theUser.username;
+		cout << "\t" << theUser.firstName.at(0) << ". " << theUser.lastName;
+
+		if (theUser.checkedOutMediaIds.size() > 0)
+		{
+			cout << "\t" << theUser.checkedOutMediaIds.size() << " items checked out";
+		}
+
+		cout << endl;
+	}
+
+    void listAllUsers(UserHandler theUserHandler, MediaHandler theMediaHandler)
     {
         vector <int> userIdList = theUserHandler.getAllUserIds();
         vector <int> mediaIdList = theMediaHandler.getAllMediaIds();
         
+		//cout << "-----------------------------------------------------" << endl;
+		//cout << "ID\tType\tUsername\t\tName\t\tChecked Out" << endl;
+		//cout << "-----------------------------------------------------" << endl;
+
         for(unsigned int i = 0; i < userIdList.size(); i++)
         {
             User theUser = theUserHandler.getUser(userIdList[i]);
+			/*
             cout << "ID: " << theUser.userID << endl;
             cout << "Type: ";
             if (theUser.userType == 'a')
@@ -1332,9 +1425,12 @@ public:
             cout << "Email: " << theUser.email << endl;
             cout << "Address: " << theUser.address << endl;
             cout << "Phone number: " << theUser.phone << endl;
-            
-            cout << "------------------" << endl;
-       
+            */
+
+			displayUserShort(theUser.userID, theUserHandler, theMediaHandler);
+            //cout << "------------------" << endl;
+			
+			/*
             if (theUser.checkedOutMediaIds.size() > 0)
             {
                 cout << "Checked out media: " << endl;
@@ -1358,15 +1454,125 @@ public:
                     }
                 }
                 cout << "---------------" << endl;
+            }*/
+        }
+    }
+
+	void displayMediaRecord(int mediaId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		Media theMedia = theMediaHandler.getMedia(mediaId);
+        cout << "ID: " << theMedia.mediaID << endl;
+        cout << "Type: ";
+        if (theMedia.mediaType == 'b')
+        {
+            cout << "Book" << endl;
+        }
+        else if (theMedia.mediaType == 'd')
+        {
+            cout << "DVD" << endl;
+        }
+        else
+        {
+            cout << "Music" << endl;
+        }
+        
+        cout << "ISBN: " << theMedia.isbn << endl;
+        cout << "Title: " << theMedia.title << endl;
+        cout << "Author: " << theMedia.author << endl;
+        cout << "Subject: " << theMedia.subject << endl;
+        cout << "Copies: " << theMedia.copies << endl;
+        
+        cout << "------------------" << endl;
+    }
+
+	void displayMediaCheckedOutUsers(int mediaId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		time_t rawTime;		// need these time objects to get the renewal dates and display them
+        tm *readableTime;
+        
+        time_t currentTime = time(0);	// get current time to check if anything's overdue
+        
+		Media theMedia = theMediaHandler.getMedia(mediaId);
+		User theUser;
+
+        if (theMedia.checkedOutUserIds.size() > 0)
+        {
+            cout << "Checked out by: " << endl;
+            for (unsigned int i = 0; i < theMedia.checkedOutUserIds.size(); i++)
+            {
+				theUser = theUserHandler.getUser(theMedia.checkedOutUserIds[i]);
+
+                rawTime = theMedia.dueDates[i];
+                readableTime = localtime(&rawTime);
+
+                cout << "ID " << theMedia.checkedOutUserIds[i] << "\t" << theUser.username << "\t\tDue: " << asctime(readableTime);
+                if (currentTime >= theMedia.dueDates[i])
+                {
+                    cout << " ! OVERDUE";
+                }
+                cout << endl;
             }
+            cout << "---------------" << endl;
+        }
+        
+        //delete readableTime; ptrdel
+	}
+
+	// displays media ID, type, title, number of users that have checked out item on one line
+	void displayMediaShort(int mediaId, UserHandler theUserHandler, MediaHandler theMediaHandler)
+	{
+		Media theMedia = theMediaHandler.getMedia(mediaId);
+        cout << "ID " << theMedia.mediaID;
+        cout << "\t";
+
+        if (theMedia.mediaType == 'b')
+        {
+			cout << "Book";
+		}
+		else if (theMedia.mediaType == 'd')
+		{
+			cout << "DVD";
+		}
+		else
+		{
+			cout << "Music";
+		}
+        
+		cout << "\t" << theMedia.title;
+		
+
+		if (theMedia.checkedOutUserIds.size() > 0)
+		{
+			cout << "\t\t" << theMedia.checkedOutUserIds.size() << " checked out";
+		}
+
+		cout << endl;
+	}
+
+	void listAllMedia(UserHandler theUserHandler, MediaHandler theMediaHandler)
+    {
+        vector <int> mediaIdList = theMediaHandler.getAllMediaIds();
+        
+		//cout << "-----------------------------------------------------" << endl;
+		//cout << "ID\tType\tUsername\t\tName\t\tChecked Out" << endl;
+		//cout << "-----------------------------------------------------" << endl;
+
+        for(unsigned int i = 0; i < mediaIdList.size(); i++)
+        {
+			
+            Media theMedia = theMediaHandler.getMedia(mediaIdList[i]);
+			
+			displayMediaShort(theMedia.mediaID, theUserHandler, theMediaHandler);
+            
         }
     }
     
     // print the menu and get a command from user
     char menu_select_get(int menu_type)
     {
-        char command = 'x';
+        char command = 'z';
         User theUser;
+
         switch (menu_type)
         {
             case 0:
@@ -1378,6 +1584,7 @@ public:
                 cout << "(l) List media items" << endl;
                 cout << "(c) Check out media item" << endl;
                 cout << "(i) Check in media item" << endl;
+				cout << "(v) View media record" << endl;
                 break;
             case 1:
                 cout << "ADMIN USER MENU: " << endl;
@@ -1386,6 +1593,7 @@ public:
                 cout << "(e) Edit user" << endl;
                 cout << "(s) Search users" << endl;
                 cout << "(l) List users" << endl;
+				cout << "(v) View user record" << endl;
                 break;
             case 2:
                 cout << "PATRON MENU: " << endl;
@@ -1937,7 +2145,11 @@ int main()
             {
                 menu_select = 1;
             }
-            else
+            else if (menu_select == 1)
+            {
+                menu_select = 2;
+            }
+			else if (menu_select == 2)
             {
                 menu_select = 0;
             }
@@ -1947,19 +2159,21 @@ int main()
         {
             Media editedMedia;
             vector <int> mediaResults;
-            
+            int newMediaID;
+			int editID;
+			int deleteID;
+			int viewID;
+
             switch (menu_command)
             {
                 case 'a':
-                    int newMediaID;
                     theMedia = theInterface.menu_media_add();
                     newMediaID = theMediaHandler.addMedia(theMedia);
                     cout << endl << "Successfully added Media ID " << newMediaID << endl << endl;
                     break;
                     
                 case 'e':
-                    int editID;
-                    theMediaHandler.listAllMedia();
+                    theInterface.listAllMedia(theUserHandler, theMediaHandler);
                     cout << endl << "Media ID to edit: ";
                     do
                     {
@@ -1978,7 +2192,6 @@ int main()
                     break;
                     
                 case 'd':
-                    int deleteID;
                     cout << endl << "Media ID to delete: ";
                     cin >> deleteID;
                     theMediaHandler.deleteMedia(deleteID);
@@ -1986,7 +2199,7 @@ int main()
                     break;
                 case 'l':
                     cout << "---------------------------------- MEDIA LIST" << endl;
-                    theMediaHandler.listAllMedia();
+                    theInterface.listAllMedia(theUserHandler, theMediaHandler);
                     break;
                     
                 case 'c':
@@ -2001,25 +2214,34 @@ int main()
                 case 's':
                     mediaResults = theInterface.menuMediaSearch(theMediaHandler);
                     break;
+				
+				case 'v':
+					cout << "Enter ID of media to view: ";
+					cin >> viewID;
+					theInterface.displayMediaRecord(viewID, theUserHandler, theMediaHandler);
+					theInterface.displayMediaCheckedOutUsers(viewID, theUserHandler, theMediaHandler);
+					break;
                     
             }
         }
         
-        else	// user menu
+        else if (menu_select == 1)	// user menu
         {
             User editedUser;
             vector <int> userResults;
+			int newUserID;
+			int editID;
+			int deleteID;
+			int viewID;
             
             switch (menu_command)
             {
                 case 'a':
-                    int newUserID;
                     theUser = theInterface.menu_user_add();
                     newUserID = theUserHandler.addUser(theUser);
                     cout << "Successfully added user ID " << newUserID << endl;
                     break;
                 case 'e':
-                    int editID;
                     theUserHandler.listAllUsers();
                     cout << endl << "User ID to edit: ";
                     do
@@ -2038,7 +2260,6 @@ int main()
                     cout << endl << "Successfully edited user ID " << editID << endl;
                     break;
                 case 'd':
-                    int deleteID;
                     cout << endl << "User ID to delete: ";
                     cin >> deleteID;
                     theUserHandler.deleteUser(deleteID);
@@ -2046,14 +2267,23 @@ int main()
                     break;
                 case 'l':
                     cout << "---------------------------------- USER LIST" << endl;
-                    theInterface.displayUserInformation(theUserHandler, theMediaHandler);
+                    theInterface.listAllUsers(theUserHandler, theMediaHandler);
                     break;
                 case 's':
                     userResults = theInterface.menuUserSearch(theUserHandler);
                     break;
-                    
+				case 'v':
+					cout << "Enter ID of user to view: ";
+					cin >> viewID;
+					theInterface.displayUserProfile(viewID, theUserHandler, theMediaHandler);
+					theInterface.displayUserCheckedOutItems(viewID, theUserHandler, theMediaHandler);
+					break;       
             }
         }
+
+		else if (menu_select == 2)		// patron menu
+		{
+		}
         
     }
     
