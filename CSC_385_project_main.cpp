@@ -1124,6 +1124,54 @@ public:
         }
     }
     
+    //	search Media records for matches on multiple fields
+    vector<int> search(Media searchTermsMedia)
+    {
+        vector<int> searchHits;
+        
+        for(unsigned int i = 0; i < list.size(); i++)
+        {
+            // assume this is a hit, then test against each of the search terms to see if it actually is
+            bool hit = true;
+            
+            if (searchTermsMedia.mediaType != 'a' &&
+                 searchTermsMedia.mediaType != list[i].mediaType)
+            {
+                hit = false;
+            }
+            
+            if (searchTermsMedia.isbn != "" &&
+                searchTermsMedia.isbn != list[i].isbn)
+            {
+                hit = false;
+            }
+            
+            if (searchTermsMedia.title != "" &&
+                stringToLowercase(searchTermsMedia.title) != stringToLowercase(list[i].title))
+            {
+                hit = false;
+            }
+            
+            if (searchTermsMedia.author != "" &&
+                stringToLowercase(searchTermsMedia.author) != stringToLowercase(list[i].author))
+            {
+                hit = false;
+            }
+            
+            if (searchTermsMedia.subject != "" &&
+                stringToLowercase(searchTermsMedia.subject) != stringToLowercase(list[i].subject))
+            {
+                hit = false;
+            }
+             
+            if (hit == true)
+            {
+                searchHits.push_back(list[i].mediaID);     // all search terms matched, add to results
+            }
+        }
+        return searchHits;
+    }
+    
     //	search Media records for matches on one field
     vector<int> searchOneField(string term, char field)
     {
@@ -1303,6 +1351,11 @@ public:
         return theMediaList.searchOneField(search_term, field);
     }
     
+    vector<int> searchMedia(Media searchTermsMedia)
+    {
+        return theMediaList.search(searchTermsMedia);
+    }
+    
     
 };
 
@@ -1385,7 +1438,7 @@ public:
         cout << "\t";
         if (theUser.userType == 'a')
         {
-            cout << "Admin";
+            cout << "Admin ";
         }
         else
         {
@@ -1953,10 +2006,10 @@ public:
     
     vector<int> menuMediaSearch(MediaHandler theMediaHandler)
     {
-        vector<int> resultsList;
-        char search_command = 'z';
-        string search_term ="";
-        
+        vector<int> resultsList;        // gets filled with media IDs for serach hits
+        char search_command = 'z';      // search menu selections
+        string search_term ="";         // single search term
+        Media searchTermsMedia;         // media object - properties are set with search terms for               multiple field search
         
         cout << "Select field to search by" << endl << endl;
         
@@ -2004,13 +2057,45 @@ public:
                 cout << "Subject: ";
                 getline(cin, search_term);
                 break;
+            
+            case 'm':
                 
+                    
+                
+                
+                
+                cout << "Media types to search (a for all, b for book, d for DVD, m for music): ";
+                cin >> searchTermsMedia.mediaType;
+                cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+                
+                cout << "Enter your search terms (leave field blank if you don't want to search by that field)";
+                
+                cout << "ISBN number: ";
+                getline(cin, searchTermsMedia.isbn);
+                
+                cout << "Title: ";
+                getline(cin, searchTermsMedia.title);
+                
+                cout << "Author: ";
+                getline(cin, searchTermsMedia.author);
+                
+                cout << "Subject: ";
+                getline(cin, searchTermsMedia.subject);
+                
+               
+
             default:
                 break;
         }
         
-        resultsList = theMediaHandler.searchMediaOneField(search_term, search_command);
-        
+        if (search_command != 'm')
+        {
+            resultsList = theMediaHandler.searchMediaOneField(search_term, search_command);
+        }
+        else if (search_command == 'm')
+        {
+            resultsList = theMediaHandler.searchMedia(searchTermsMedia);
+        }
         cout << endl << "---------------------" << endl;
         
         if (resultsList.size() > 0)
