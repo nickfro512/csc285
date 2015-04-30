@@ -1,56 +1,10 @@
 /*
  CSC 385 project - Library Management System
- 
- 
- User and media add, delete, edit, list currently work. User and Media are read in from user_data.txt and
- media_data.txt now. Changes are saved on program exit by writing to those files. Basically that's going to be
- our standin for the actual database that's in the specs.
- 
- Checking stuff in and out now works, and is saved to user and media files. Due dates are set to 30 days from
- current date. MediaList->renew will add 7 days.
- 
- 
- Known bugs:
- Entering text for copies when adding/editing media breaks program
- 
- STUFF THAT STILL NEEDS TO BE DONE:
- 
- USER:
- login
- logout
- search
- display info on one line - just show user ID and name. need a display that fits on one line for lists.
- 
- 
- MEDIA:
- Search
- display info on one line - just show media ID and title. need a display that fits on one line for lists.
- 
- 
- MENUS:
- 
- *** Would be nice to have all menus be objects, currently functions.
- 
- INPUT VALIDATION: We will want at least basic validation for new user/media info (i.e. valid emails, passwords etc)
- 
- 
- Login interface - prompt for username, password - if it's good give user a new session id (User.login)
- 
- Admin interface
- User menu
- Search users by field X
- Media menu
- Search media by field X
- 
- 
- User interface
- Search menu
- Checkin/checkout menu
- 
- 
+ Section 2
+ Group 1
  */
 
-//#include "stdafx.h"
+#include "stdafx.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -58,8 +12,6 @@
 #include <ctime>
 
 using namespace std;
-
-const bool DEBUG_MODE = false;	// if true logs you in automatically as admin
 
 const bool ENABLE_IO = true;	// enable reading/writing user and media records
 
@@ -491,17 +443,17 @@ public:
                         {
                             while (line.at(0) != 'x' && line != "")
                             {
-                                cout << "line is:  " << line;
+                                //cout << "line is:  " << line;
                                 theUser.checkedOutMediaIds.push_back(atoi(line.c_str()));
-                                cout << " *** added: " << atoi(line.c_str()) << endl;
+                                //cout << " *** added: " << atoi(line.c_str()) << endl;
                                 getline(theFile, line);
                             }
                         }
-                        cout << "finished user checkout I/O for user ID " << theUser.userID << endl;
+                        //cout << "finished user checkout I/O for user ID " << theUser.userID << endl;
                     }
                     else
                     {
-                        cout << endl << "no line!";
+                        //cout << endl << "no line!";
                     }
                     
                     newList.push_back(theUser);			// add this user to new user list
@@ -510,7 +462,7 @@ public:
             }
             list = newList;					// replace current list with the new list
             
-            cout << "Successfully read in " << list.size() << " users from file " << filename << endl;
+            //cout << "Successfully read in " << list.size() << " users from file " << filename << endl;
             
             theFile.close();				// close file and return true (file read success)
             return true;
@@ -559,7 +511,7 @@ public:
                 }
                 theFile << "x" << endl;
                 
-                cout << "Successfully wrote user at index " << i << " to " << filename << endl;
+                //cout << "Successfully wrote user at index " << i << " to " << filename << endl;
             }
             
             theFile.close();				// close file and return true (file read success)
@@ -853,8 +805,6 @@ public:
         int targetIndex = getMediaIndex(id);
         //editedMedia.displayCheckedOutInformation();
         list[targetIndex] = editedMedia;
-        cout << endl << "NEW LIST" << endl;
-        list[targetIndex].displayCheckedOutInformation();
         return true;
     }
     
@@ -1003,7 +953,7 @@ public:
                             {
                                 //cout << "line is:  " << line;
                                 theMedia.checkedOutUserIds.push_back(atoi(line.c_str()));
-                                cout << " *** added: " << atoi(line.c_str()) << endl;
+                                //cout << " *** added: " << atoi(line.c_str()) << endl;
                                 
                                 time_t dueDate = time(0);
                                 tm *dueDateTm = localtime(&dueDate);
@@ -1028,17 +978,17 @@ public:
                                 //delete dueDateTm;	//ptrdel
                                 
                                 theMedia.dueDates.push_back(dueDate);
-                                cout << "added due date: " << asctime(dueDateTm) << endl;
+                                //cout << "added due date: " << asctime(dueDateTm) << endl;
                                 
                                 getline(theFile, line);
                                 
                             }
                         }
-                        cout << "finished media checkout I/O for media ID " << theMedia.mediaID << endl;
+                        //cout << "finished media checkout I/O for media ID " << theMedia.mediaID << endl;
                     }
                     else
                     {
-                        cout << endl << "no line!";
+                        //cout << endl << "no line!";
                     }
                     
                     /*
@@ -1059,7 +1009,7 @@ public:
             
             list = newList;					// replace current list with the new list
             
-            cout << "Successfully read in " << list.size() << " media from file " << filename << endl;
+           // cout << "Successfully read in " << list.size() << " media from file " << filename << endl;
             
             theFile.close();				// close file and return true (file read success)
             return true;
@@ -1110,7 +1060,7 @@ public:
                 }
                 theFile << "x" << endl;		// write x to indicate end of data for this record
                 
-                cout << "Successfully wrote media at index " << i << " to " << filename << endl;
+                //cout << "Successfully wrote media at index " << i << " to " << filename << endl;
             }
             
             theFile.close();				// close file and return true (file read success)
@@ -1367,7 +1317,6 @@ public:
     InterfaceHandler()  // constructor
     {
     }
-    
     
     void displayUserProfile(int userId, UserHandler theUserHandler, MediaHandler theMediaHandler)
     {
@@ -1629,7 +1578,7 @@ public:
     }
     
     // print the menu and get a command from user
-    char menu_select_get(int menu_type)
+    char MenuSelect(int menu_type)
     {
         char command = 'z';
         User theUser;
@@ -1646,7 +1595,12 @@ public:
                 cout << "(c) Check out media item" << endl;
                 cout << "(i) Check in media item" << endl;
                 cout << "(v) View media record" << endl;
-                break;
+				cout << "(t) Toggle Media/User menu" << endl;
+				cout << "(x) exit" << endl;
+				cin >> command;
+				cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+				cout << endl;
+				break;
             case 1:
                 cout << "ADMIN USER MENU: " << endl;
                 cout << "(a) Add user" << endl;
@@ -1655,6 +1609,11 @@ public:
                 cout << "(s) Search users" << endl;
                 cout << "(l) List users" << endl;
                 cout << "(v) View user record" << endl;
+				cout << "(t) Toggle Media/User menu" << endl;
+				cout << "(x) exit" << endl;
+				cin >> command;
+				cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+				cout << endl;
                 break;
             case 2:
                 cout << "PATRON MENU: " << endl;
@@ -1663,24 +1622,24 @@ public:
                 cout << "(c) Check out media" << endl;
                 cout << "(i) Check in media" << endl;
                 cout << "(v) View checked out list" << endl;
+				cout << "(x) exit" << endl;
+				cin >> command;
+				cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
+				cout << endl;
                 break;
         }
-        cout << "(t) Toggle Media/User menu" << endl;
-        cout << "(x) exit" << endl;
-        cin >> command;
-        cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
-        cout << endl;
         return command;
     }
     
     char menuLoginSelect()
     {
         char select = 'z';
-        while (select != 'l' && select != 'c' && select != 'r')
+        while (select != 'l' && select != 'c' && select != 'r' && select != 'x')
         {
             cout << "(l) Login" << endl;
             cout << "(c) Create new account" << endl;
             cout << "(r) Reset your password" << endl;
+			cout << "(x) Exit"	<< endl;
             cin >> select;
         }
         return select;
@@ -1690,34 +1649,48 @@ public:
     // NOTE: will want to validate these inputs eventually
     User menuUserAdd()
     {
-        User editedUser;
+        User newUser;
         
         cout << "User type (a for admin, p for patron): ";
-        cin >> editedUser.userType;
+        cin >> newUser.userType;
         cin.ignore(1, '\n');		// stop last cin from messing up future getline input by inserting a new line here
         
         cout << "Username: ";
-        getline(cin, editedUser.username);
+        getline(cin, newUser.username);
         
         cout << "Password: ";
-        getline(cin, editedUser.password);
+        getline(cin, newUser.password);
         
         cout << "First Name: ";
-        getline(cin, editedUser.firstName);
+        getline(cin, newUser.firstName);
         
         cout << "Last Name: ";
-        getline(cin, editedUser.lastName);
+        getline(cin, newUser.lastName);
         
         cout << "Email: ";
-        getline(cin, editedUser.email);
+        getline(cin, newUser.email);
+
+		while (!checkEmail(newUser.email))
+		{
+			cout << "Incorrect format, please use xxx@yyy.zzz\n";
+			cout << "Email: ";
+			getline(cin, newUser.email);
+		}
         
         cout << "Address: ";
-        getline(cin, editedUser.address);
+        getline(cin, newUser.address);
         
         cout << "Phone: ";
-        getline(cin, editedUser.phone);
+		getline(cin, newUser.phone);
+
+		while (!checkPhone(newUser.phone))
+		{
+			cout << "Incorrect format, please use XXX-XXX-XXX\n";
+			cout << "Phone: ";
+			getline(cin, newUser.phone);
+		}
         
-        return editedUser;
+        return newUser;
     }
     
     // Menu to allow admin to edit user records
@@ -1783,8 +1756,15 @@ public:
                 case '6':
                     cout << "Email: ";
                     getline(cin, editedUser.email);
-                    break;
                     
+					while (!checkEmail(editedUser.email))
+					{
+						cout << "Incorrect format, please use xxx@yyy.zzz\n";
+						cout << "Email: ";
+						getline(cin, editedUser.email);
+					}
+					break;
+                 
                 case '7':
                     cout << "Address: ";
                     getline(cin, editedUser.address);
@@ -1793,7 +1773,15 @@ public:
                 case '8':
                     cout << "Phone: ";
                     getline(cin, editedUser.phone);
-                    break;
+                    
+					while (!checkPhone(editedUser.phone))
+					{
+						cout << "Incorrect format, please use XXX-XXX-XXX\n";
+						cout << "Phone: ";
+						getline(cin, editedUser.phone);
+					}
+
+					break;
                     
                 default:
                     //cout << "Invalid command!" << endl;
@@ -2196,6 +2184,48 @@ public:
         
         return editedMedia;
     }
+
+	bool checkEmail(string _input) // accepts any email using xxx@yyy.zzz format
+	{
+		int AtOffset = -1;
+		int DotOffset = -1;
+		for (unsigned int i = 0; i < _input.length(); i++)
+		{
+			if (_input[i] == '@') // If one of the characters is @, store it's position in AtOffset
+				AtOffset = (int)i;
+			else if (_input[i] == '.') // Same, but with the dot
+				DotOffset = (int)i;
+		}
+		if (AtOffset == -1 || DotOffset == -1) // If cannot find a Dot or a @
+			return 0;
+		if (AtOffset > DotOffset) // If the @ is after the Dot
+			return 0;
+		return !(DotOffset >= ((int)_input.length() - 1)); //Check there is some other letters after the Dot
+	}
+
+	bool is_valid_char(char c, std::string::size_type pos)
+	{
+		const char dash = '-';
+
+		if (pos == 3 || pos == 7) // positions where dash is expected
+			return c == dash;
+
+		else // positions where a digit is expected
+			return isdigit(c);
+	}
+
+	bool checkPhone(const std::string& candidate)
+	{
+		const std::string::size_type EXPECTED_SIZE = 3 + 1 + 3 + 1 + 4;
+
+		if (candidate.size() != EXPECTED_SIZE) return false;
+
+		for (std::size_t i = 0; i < EXPECTED_SIZE; ++i) // for each position in the string
+			if (!is_valid_char(candidate[i], i)) return false;
+
+		return true;
+	}
+
     
 };
 
@@ -2204,7 +2234,7 @@ public:
 int main()
 {
     
-    int menu_select = 1;			// submenu number (0 = admin user, 1 = admin media, 2 = patron)
+    int menu_select = 99;			// submenu number (0 = admin user, 1 = admin media, 2 = patron)
     char menu_command = 'z';		// submmenu user input
     char top_menu_command = 'z';	// top level menu user input
     
@@ -2221,51 +2251,17 @@ int main()
         theUserHandler.readUsers();		// read users from data file into program memory
         theMediaHandler.readMedia();	// read media from data file into program memory
     }
-    
-    if (DEBUG_MODE)
-        loggedInUser = theUserHandler.getUser(1);
-    
-    
-    
-    
-    
-    
-    User testUser;				// initialize with a user for testing
-    testUser.userType = 'a';
-    testUser.sessionID = 55324;
-    testUser.username = "nfrogley";
-    testUser.password = "password";
-    testUser.firstName = "Nick";
-    testUser.lastName = "Frogley";
-    testUser.email = "nickfro@gmail.com";
-    testUser.address = "111 Mansfield Hollow Rd, Mansfield Center, CT 06250";
-    testUser.phone = "860 214 9523";
-    
-    //theUserHandler.addUser(testUser);			// add first user
-    
-    Media testMedia;			// initialize with a media for testing
-    testMedia.mediaType = 'b';
-    testMedia.isbn = "0553386794";
-    testMedia.title = "Game of Thrones";
-    testMedia.author = "George R. R. Martin";
-    testMedia.subject = "Fantasy";
-    testMedia.copies = 5;
-    
-    //theMediaHandler.addMedia(testMedia);	// add first media
-    
-    
-    
-    
-    //theUser = theUserHandler.getUser(0);	// get the new user record
-    // theUser.displayInformation();		// print record
-    
-    //theUserHandler.logUserIn(
-    
-    while (top_menu_command != 'x')     // top level (login) menu
+	
+	while (top_menu_command != 'x')     // top level (login) menu
     {
+		cout << "========================" << endl;
+		cout << "LIBRARY MANAGMENT SYSTEM" << endl;
+		cout << "========================" << endl << endl;
+
+		menu_select = 99;		// set to 99 so menu will loop back here if it isn't set elsewhere
+
         top_menu_command = theInterface.menuLoginSelect();		// top level menu command
-        if (top_menu_command == 'x') { cout << "we got here"; exit;}
-        menu_command = 'z';
+		menu_command = 'z';
         
         string tempUsername;	// username to be entered by user
         string tempPassword;	// password to be entered by user
@@ -2273,18 +2269,23 @@ int main()
         switch(top_menu_command)    // login menu
         {
             case 'l':
-                cout << "Username: ";
+                cout << "\nUsername: ";
                 cin >> tempUsername;
-                cout << "\nPassword: ";
+                cout << "Password: ";
                 cin >> tempPassword;
                 if (theUserHandler.logUserIn(tempUsername, tempPassword) != 0)	// if username/password is correct, will log in as patron or admin depending on userType
                 {
-                    theUser = theUserHandler.getUserByUsername(tempUsername);
-                    cout << "\nWelcome " << theUser.firstName << " " << theUser.lastName << endl;
-                    if (theUser.userType == 'a')
+                    loggedInUser = theUserHandler.getUserByUsername(tempUsername);
+                    loggedInUser.displayInformation();
+					cout << "\nWelcome " << loggedInUser.firstName << " " << loggedInUser.lastName << endl << endl;
+                    if (loggedInUser.userType == 'a')
+					{
                         menu_select = 0;	// logs user in as admin
-                    else
+					}
+					else
+					{
                         menu_select = 2;	// logs user in as patron
+					}
                 }
                 else	// in case username/password is incorrect, reverts back to login menu
                 {
@@ -2298,18 +2299,42 @@ int main()
                 theUser = theInterface.menuUserAdd();
                 newUserID = theUserHandler.addUser(theUser);
                 cout << "Successfully added user ID " << newUserID << endl;
-                menu_select = 2;
+				theUserHandler.logUserIn(theUser.username, theUser.password);
+				loggedInUser = theUserHandler.getUser(newUserID);
+                if (theUser.userType == 'a')
+				{
+                    menu_select = 0;	// logs user in as admin
+				}
+				else
+				{
+                    menu_select = 2;	// logs user in as patron
+				}
                 break;
                 
             case 'r':
+				//	password reset not fully implemented - this just allows user to enter a new one
                 string username;
                 cout << "Enter username: ";
+				cin >> username;
+				theUser = theUserHandler.getUserByUsername(username);
+				if (theUser.userID != -1)
+				{
+					cout << "Enter new password: ";
+					cin >> theUser.password;
+					theUserHandler.editUser(theUser.userID, theUser);
+					cout << "Password reset." << endl << endl;
+				}
+				else
+				{
+					cout << "Username not found" << endl << endl;
+				}
+				menu_command = 'x';
                 break;
         }       // end login menu switch
         
-        while (menu_command != 'x')
+        while (menu_command != 'x' && top_menu_command != 'x')
         {
-            menu_command = theInterface.menu_select_get(menu_select);
+            menu_command = theInterface.MenuSelect(menu_select);
             
             if (menu_command == 't')		// toggle media/user menu
             {
@@ -2411,7 +2436,7 @@ int main()
                         cout << "Successfully added user ID " << newUserID << endl;
                         break;
                     case 'e':
-                        theUserHandler.listAllUsers();
+                        theInterface.listAllUsers(theUserHandler, theMediaHandler);
                         cout << endl << "User ID to edit: ";
                         do
                         {
@@ -2449,16 +2474,21 @@ int main()
                         theInterface.displayUserCheckedOutItems(viewID, theUserHandler, theMediaHandler);
                         break;
                 }
-            }
+            }	// end admin user menu
             
             else if (menu_select == 2)		// patron menu
             {
                 vector <int> mediaResults;
                 Media editedMedia;
+				User editedUser;
                 
                 switch (menu_command)
                 {
                     case 'e':	// edit profile
+						theUser = theUserHandler.getUser(loggedInUser.userID);
+                        editedUser = theInterface.menuUserEdit(theUser);
+                        theUserHandler.editUser(loggedInUser.userID, editedUser);
+                        cout << endl << "Successfully edited user" << endl;
                         break;
                     case 's':	// search media
                         mediaResults = theInterface.menuMediaSearch(theMediaHandler);
@@ -2475,12 +2505,14 @@ int main()
                         break;
                     default:	// in case menu_command is incorrect
                         break;
+
                 }
-            }
+            }		// end patron menu
             
-        }
+        }	// end submenus
         
-    }
+    }	// end top level menu
+
     
     if (ENABLE_IO)
     {
